@@ -182,12 +182,16 @@ function run() {
                 deny: config.deny_licenses
             };
             const filteredChanges = (0, filter_1.filterChangesBySeverity)(minSeverity, changes);
-            for (const change of filteredChanges) {
-                if (change.change_type === 'added' &&
-                    change.vulnerabilities !== undefined &&
-                    change.vulnerabilities.length > 0) {
+            const addedChanges = filteredChanges.filter(change => change.change_type === 'added' &&
+                change.vulnerabilities !== undefined &&
+                change.vulnerabilities.length > 0);
+            if (addedChanges.length > 0) {
+                for (const change of addedChanges) {
                     printChangeVulnerabilities(change);
-                    failed = true;
+                }
+                failed = true;
+                if (config.show_summary) {
+                    yield showSummaryChangeVulnerabilities(addedChanges);
                 }
             }
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
@@ -225,6 +229,118 @@ function printChangeVulnerabilities(change) {
     for (const vuln of change.vulnerabilities) {
         core.info(`${ansi_styles_1.default.bold.open}${change.manifest} » ${change.name}@${change.version}${ansi_styles_1.default.bold.close} – ${vuln.advisory_summary} ${renderSeverity(vuln.severity)}`);
         core.info(`  ↪ ${vuln.advisory_url}`);
+    }
+}
+function showSummaryChangeVulnerabilities(addedPackages) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const rows = [];
+        const manifests = getManifests(addedPackages);
+        for (const manifest of manifests) {
+            for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
+                let previous_package = '';
+                let previous_version = '';
+                for (const vuln of change.vulnerabilities) {
+                    const sameAsPrevious = previous_package === change.name &&
+                        previous_version === change.version;
+                    if (!sameAsPrevious) {
+                        rows.push([
+                            renderUrl(change.source_repository_url, change.name),
+                            change.version,
+                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                            vuln.severity
+                        ]);
+                    }
+                    else {
+                        rows.push([
+                            { data: '', colspan: '2' },
+                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                            vuln.severity
+                        ]);
+                    }
+                    previous_package = change.name;
+                    previous_version = change.version;
+                }
+            }
+            yield core.summary
+                .addHeading(`Added known Vulnerabilities for ${manifest}`)
+                .addTable([
+                [
+                    { data: 'Name', header: true },
+                    { data: 'Version', header: true },
+                    { data: 'Vulnerability', header: true },
+                    { data: 'Severity', header: true }
+                ],
+                ...rows
+            ])
+                .write();
+        }
+    });
+}
+// async function showSummaryChangeVulnerabilities2(
+//   filteredChanges: Changes
+// ): Promise<void> {
+//   const rows: SummaryTableRow[] = []
+//   // TODO: extract this
+//   const addedPackages = filteredChanges.filter(
+//     change =>
+//       change.change_type === 'added' &&
+//       change.vulnerabilities !== undefined &&
+//       change.vulnerabilities.length > 0
+//   )
+//   let previous_package = ''
+//   let previous_version = ''
+//   for (const change of addedPackages.sort((a, b) =>
+//     (a.name + a.version).localeCompare(b.name + b.version)
+//   )) {
+//     core.info(`DEBUG: ${change.package_url}`)
+//     // TODO: order and group by manifest/name/version
+//     for (const vuln of change.vulnerabilities) {
+//       const sameAsPrevious =
+//         previous_package === change.name && previous_version === change.version
+//       if (!sameAsPrevious) {
+//         rows.push([
+//           change.manifest,
+//           renderUrl(change.source_repository_url, change.name),
+//           change.version,
+//           renderUrl(vuln.advisory_url, vuln.advisory_summary),
+//           vuln.severity
+//         ])
+//       } else {
+//         rows.push([
+//           {data: '', colspan: '3'},
+//           renderUrl(vuln.advisory_url, vuln.advisory_summary),
+//           vuln.severity
+//         ])
+//       }
+//       previous_package = change.name
+//       previous_version = change.version
+//     }
+//   }
+//   if (rows.length > 0) {
+//     await core.summary
+//       .addHeading('Added known Vulnerabilities')
+//       .addTable([
+//         [
+//           {data: 'Manifest', header: true},
+//           {data: 'Name', header: true},
+//           {data: 'Version', header: true},
+//           {data: 'Vulnerability', header: true},
+//           {data: 'Severity', header: true}
+//         ],
+//         ...rows
+//       ])
+//       .write()
+//   }
+// }
+function getManifests(changes) {
+    return new Set(changes.flatMap(c => c.manifest));
+}
+function renderUrl(url, text) {
+    if (url) {
+        return `<a href="${url}">${text}</a>`;
+    }
+    else {
+        return text;
     }
 }
 function renderSeverity(severity) {
@@ -319,7 +435,8 @@ exports.ConfigurationOptionsSchema = z
     .object({
     fail_on_severity: z.enum(exports.SEVERITIES).default('low'),
     allow_licenses: z.array(z.string()).default([]),
-    deny_licenses: z.array(z.string()).default([])
+    deny_licenses: z.array(z.string()).default([]),
+    show_summary: z.boolean().default(false)
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');
@@ -14014,13 +14131,17 @@ function readConfig() {
         .parse(getOptionalInput('fail-on-severity'));
     const allow_licenses = getOptionalInput('allow-licenses');
     const deny_licenses = getOptionalInput('deny-licenses');
+    const show_summary = z
+        .optional(z.boolean())
+        .parse(JSON.parse(getOptionalInput('show-summary') || 'false'));
     if (allow_licenses !== undefined && deny_licenses !== undefined) {
         throw new Error("Can't specify both allow_licenses and deny_licenses");
     }
     return {
         fail_on_severity,
         allow_licenses: allow_licenses === null || allow_licenses === void 0 ? void 0 : allow_licenses.split(',').map(x => x.trim()),
-        deny_licenses: deny_licenses === null || deny_licenses === void 0 ? void 0 : deny_licenses.split(',').map(x => x.trim())
+        deny_licenses: deny_licenses === null || deny_licenses === void 0 ? void 0 : deny_licenses.split(',').map(x => x.trim()),
+        show_summary
     };
 }
 exports.readConfig = readConfig;
@@ -14122,7 +14243,8 @@ exports.ConfigurationOptionsSchema = z
     .object({
     fail_on_severity: z.enum(exports.SEVERITIES).default('low'),
     allow_licenses: z.array(z.string()).default([]),
-    deny_licenses: z.array(z.string()).default([])
+    deny_licenses: z.array(z.string()).default([]),
+    show_summary: z.boolean().default(false)
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');

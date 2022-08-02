@@ -283,7 +283,9 @@ function run() {
 function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
-        let body = severity ? `Vulnerabilities where filtered by ${severity}\n` : '';
+        let body = severity
+            ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+            : '';
         core.debug(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
             body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;

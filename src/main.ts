@@ -107,7 +107,9 @@ async function createVulnerabilitiesCheck(
 ): Promise<void> {
   const manifests = getManifests(addedPackages)
 
-  let body = severity ? `Vulnerabilities where filtered by ${severity}\n` : ''
+  let body = severity
+    ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+    : ''
 
   core.debug(`found ${manifests.entries.length} manifests`)
 

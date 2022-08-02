@@ -132,7 +132,7 @@ async function createVulnerabilitiesCheck(
         } else {
           body += '\n|||'
         }
-        body += `| ${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${
+        body += `${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${
           vuln.severity
         } |`
 

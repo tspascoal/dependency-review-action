@@ -300,7 +300,7 @@ function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed) {
                     else {
                         body += '\n|||';
                     }
-                    body += `| ${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${vuln.severity} |`;
+                    body += `${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${vuln.severity} |`;
                     previous_package = change.name;
                     previous_version = change.version;
                 }

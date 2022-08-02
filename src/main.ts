@@ -54,7 +54,6 @@ async function run(): Promise<void> {
     }
     failed = addedChanges.length > 0
 
-    core.info('adding checks')
     await createVulnerabilitiesCheck(
       addedChanges,
       pull_request.head.sha,
@@ -110,7 +109,7 @@ async function createVulnerabilitiesCheck(
 
   let body = ''
 
-  core.info(`found ${manifests.entries.length} manifests`)
+  core.debug(`found ${manifests.entries.length} manifests`)
 
   for (const manifest of manifests) {
     body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
@@ -126,16 +125,16 @@ async function createVulnerabilitiesCheck(
           previous_version === change.version
 
         if (!sameAsPrevious) {
-          body += `\n|${renderUrl(
+          body += `\n| ${renderUrl(
             change.source_repository_url,
             change.name
           )} | ${change.version}|`
         } else {
-          body += '|||'
+          body += '\n|||'
         }
-        body += `|${renderUrl(vuln.advisory_url, vuln.advisory_summary)}|${
+        body += `| ${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${
           vuln.severity
-        }|`
+        } |`
 
         previous_package = change.name
         previous_version = change.version

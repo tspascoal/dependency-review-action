@@ -26,5 +26,5 @@ export async function addCheck(
     ...github.context.repo
   })
 
-  core.info(`Created check ${JSON.stringify(res.data)}`)
+  core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
 }

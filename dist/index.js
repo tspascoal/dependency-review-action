@@ -52,7 +52,7 @@ function addCheck(body, checkName, sha, failed) {
                 title: checkName,
                 summary: body
             } }, github.context.repo));
-        core.info(`Created check ${JSON.stringify(res.data)}`);
+        core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
     });
 }
 exports.addCheck = addCheck;
@@ -249,7 +249,6 @@ function run() {
                 printChangeVulnerabilities(change);
             }
             failed = addedChanges.length > 0;
-            core.info('adding checks');
             yield createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
@@ -286,7 +285,7 @@ function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
         let body = '';
-        core.info(`found ${manifests.entries.length} manifests`);
+        core.debug(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
             body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
@@ -296,12 +295,12 @@ function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed) {
                     const sameAsPrevious = previous_package === change.name &&
                         previous_version === change.version;
                     if (!sameAsPrevious) {
-                        body += `\n|${renderUrl(change.source_repository_url, change.name)} | ${change.version}|`;
+                        body += `\n| ${renderUrl(change.source_repository_url, change.name)} | ${change.version}|`;
                     }
                     else {
-                        body += '|||';
+                        body += '\n|||';
                     }
-                    body += `|${renderUrl(vuln.advisory_url, vuln.advisory_summary)}|${vuln.severity}|`;
+                    body += `| ${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${vuln.severity} |`;
                     previous_package = change.name;
                     previous_version = change.version;
                 }

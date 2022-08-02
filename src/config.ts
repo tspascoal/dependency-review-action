@@ -19,9 +19,14 @@ export function readConfig(): ConfigurationOptions {
     throw new Error("Can't specify both allow_licenses and deny_licenses")
   }
 
+  const check_name_vulnerability = getOptionalInput(
+    'check-name-vulnerabilities'
+  )
+
   return {
     fail_on_severity,
     allow_licenses: allow_licenses?.split(',').map(x => x.trim()),
-    deny_licenses: deny_licenses?.split(',').map(x => x.trim())
+    deny_licenses: deny_licenses?.split(',').map(x => x.trim()),
+    check_name_vulnerability
   }
 }

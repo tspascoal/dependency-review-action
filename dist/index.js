@@ -241,15 +241,14 @@ function run() {
                 allow: config.allow_licenses,
                 deny: config.deny_licenses
             };
-            const filteredChanges = (0, filter_1.filterChangesBySeverity)(minSeverity, changes);
-            const addedChanges = filteredChanges.filter(change => change.change_type === 'added' &&
+            const addedChanges = (0, filter_1.filterChangesBySeverity)(minSeverity, changes).filter(change => change.change_type === 'added' &&
                 change.vulnerabilities !== undefined &&
                 change.vulnerabilities.length > 0);
             for (const change of addedChanges) {
                 printChangeVulnerabilities(change);
             }
             failed = addedChanges.length > 0;
-            yield createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
+            yield createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed, minSeverity);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
@@ -281,13 +280,13 @@ function run() {
         }
     });
 }
-function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed) {
+function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
-        let body = '';
+        let body = severity ? `Vulnerabilities where filtered by ${severity}\n` : '';
         core.debug(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
-            body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
+            body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';

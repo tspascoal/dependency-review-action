@@ -37,12 +37,10 @@ async function run(): Promise<void> {
       deny: config.deny_licenses
     }
 
-    const filteredChanges = filterChangesBySeverity(
+    const addedChanges = filterChangesBySeverity(
       minSeverity as Severity,
       changes
-    )
-
-    const addedChanges = filteredChanges.filter(
+    ).filter(
       change =>
         change.change_type === 'added' &&
         change.vulnerabilities !== undefined &&
@@ -58,7 +56,8 @@ async function run(): Promise<void> {
       addedChanges,
       pull_request.head.sha,
       config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
-      failed
+      failed,
+      minSeverity
     )
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
@@ -103,16 +102,17 @@ async function createVulnerabilitiesCheck(
   addedPackages: Changes,
   sha: string,
   checkName: string,
-  failed: boolean
+  failed: boolean,
+  severity: string | undefined
 ): Promise<void> {
   const manifests = getManifests(addedPackages)
 
-  let body = ''
+  let body = severity ? `Vulnerabilities where filtered by ${severity}\n` : ''
 
   core.debug(`found ${manifests.entries.length} manifests`)
 
   for (const manifest of manifests) {
-    body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
+    body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest

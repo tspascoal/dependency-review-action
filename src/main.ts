@@ -1,9 +1,10 @@
 import * as core from '@actions/core'
 import * as dependencyGraph from './dependency-graph'
+import * as checks from './check'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
-import {Change, PullRequestSchema, Severity} from './schemas'
+import {Change, Changes, PullRequestSchema, Severity} from './schemas'
 import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
@@ -41,16 +42,25 @@ async function run(): Promise<void> {
       changes
     )
 
-    for (const change of filteredChanges) {
-      if (
+    const addedChanges = filteredChanges.filter(
+      change =>
         change.change_type === 'added' &&
         change.vulnerabilities !== undefined &&
         change.vulnerabilities.length > 0
-      ) {
+    )
+
+    if (addedChanges.length > 0) {
+      for (const change of addedChanges) {
         printChangeVulnerabilities(change)
-        failed = true
       }
+      failed = true
     }
+
+    await addVulnerabilitiesCheck(
+      addedChanges,
+      config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
+      failed
+    )
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
       changes,
@@ -90,6 +100,55 @@ async function run(): Promise<void> {
   }
 }
 
+async function addVulnerabilitiesCheck(
+  addedPackages: Changes,
+  checkName: string,
+  failed: boolean
+): Promise<void> {
+  const manifests = getManifests(addedPackages)
+
+  let body = ''
+
+  for (const manifest of manifests) {
+    body = `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
+
+    for (const change of addedPackages.filter(
+      pkg => pkg.manifest === manifest
+    )) {
+      let previous_package = ''
+      let previous_version = ''
+      for (const vuln of change.vulnerabilities) {
+        const sameAsPrevious =
+          previous_package === change.name &&
+          previous_version === change.version
+
+        if (!sameAsPrevious) {
+          body += `\n| ${renderUrl(
+            change.source_repository_url,
+            change.name
+          )} | ${change.version} |${renderUrl(
+            vuln.advisory_url,
+            vuln.advisory_summary
+          )}|vuln.severity`
+        } else {
+          body += `\n| Span <td colspan=2></td><td>${renderUrl(
+            vuln.advisory_url,
+            vuln.advisory_summary
+          )}</td><td>${vuln.severity}</td>`
+        }
+        previous_package = change.name
+        previous_version = change.version
+      }
+    }
+  }
+
+  await checks.addCheck(body, checkName, github.context.sha, failed)
+}
+
+function getManifests(changes: Changes): Set<string> {
+  return new Set(changes.flatMap(c => c.manifest))
+}
+
 function printChangeVulnerabilities(change: Change): void {
   for (const vuln of change.vulnerabilities) {
     core.info(
@@ -100,6 +159,14 @@ function printChangeVulnerabilities(change: Change): void {
       )}`
     )
     core.info(`  ↪ ${vuln.advisory_url}`)
+  }
+}
+
+function renderUrl(url: string | null, text: string): string {
+  if (url) {
+    return `[${text}](${url})`
+  } else {
+    return text
   }
 }
 

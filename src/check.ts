@@ -14,7 +14,7 @@ export async function addCheck(
   sha: string,
   failed: boolean
 ): Promise<void> {
-  await octo.rest.checks.create({
+  const res = await octo.rest.checks.create({
     name: checkName,
     head_sha: sha,
     status: 'completed',
@@ -25,4 +25,6 @@ export async function addCheck(
     },
     ...github.context.repo
   })
+
+  core.info(`Created check ${JSON.stringify(res.data)}`)
 }

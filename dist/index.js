@@ -48,10 +48,11 @@ const retryingOctokit = githubUtils.GitHub.plugin(retry.retry);
 const octo = new retryingOctokit(githubUtils.getOctokitOptions(core.getInput('repo-token', { required: true })));
 function addCheck(body, checkName, sha, failed) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
+        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
                 title: checkName,
                 summary: body
             } }, github.context.repo));
+        core.info(`Created check ${JSON.stringify(res.data)}`);
     });
 }
 exports.addCheck = addCheck;

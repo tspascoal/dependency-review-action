@@ -113,7 +113,7 @@ async function createVulnerabilitiesCheck(
   core.info(`found ${manifests.entries.length} manifests`)
 
   for (const manifest of manifests) {
-    body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
+    body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest
@@ -129,12 +129,12 @@ async function createVulnerabilitiesCheck(
           body += `\n| ${renderUrl(
             change.source_repository_url,
             change.name
-          )} | ${change.version} |${renderUrl(
+          )} | ${change.version} | ${renderUrl(
             vuln.advisory_url,
             vuln.advisory_summary
-          )}|vuln.severity`
+          )}|${vuln.severity}|`
         } else {
-          body += `\n| <td colspan=2></td><td>${renderUrl(
+          body += `<td colspan=2></td><td>${renderUrl(
             vuln.advisory_url,
             vuln.advisory_summary
           )}</td><td>${vuln.severity}</td>`

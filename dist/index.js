@@ -250,7 +250,7 @@ function run() {
             }
             failed = addedChanges.length > 0;
             core.info('adding checks');
-            yield createVulnerabilitiesCheck(addedChanges, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
+            yield createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
@@ -282,7 +282,7 @@ function run() {
         }
     });
 }
-function createVulnerabilitiesCheck(addedPackages, checkName, failed) {
+function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
         let body = '';
@@ -306,8 +306,7 @@ function createVulnerabilitiesCheck(addedPackages, checkName, failed) {
                 }
             }
         }
-        const pr = github.context.payload.pull_request;
-        yield checks.addCheck(body, checkName, pr.pull_request.head.sha, failed);
+        yield checks.addCheck(body, checkName, sha, failed);
     });
 }
 function getManifests(changes) {

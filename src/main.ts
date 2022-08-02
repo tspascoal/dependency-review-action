@@ -9,9 +9,6 @@ import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
 
-// eslint-disable-next-line import/no-unresolved
-import {PullRequestEvent} from '@octokit/webhooks-types/schema'
-
 async function run(): Promise<void> {
   try {
     if (github.context.eventName !== 'pull_request') {
@@ -60,6 +57,7 @@ async function run(): Promise<void> {
     core.info('adding checks')
     await createVulnerabilitiesCheck(
       addedChanges,
+      pull_request.head.sha,
       config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
       failed
     )
@@ -104,6 +102,7 @@ async function run(): Promise<void> {
 
 async function createVulnerabilitiesCheck(
   addedPackages: Changes,
+  sha: string,
   checkName: string,
   failed: boolean
 ): Promise<void> {
@@ -146,9 +145,7 @@ async function createVulnerabilitiesCheck(
     }
   }
 
-  const pr = github.context.payload.pull_request as PullRequestEvent
-
-  await checks.addCheck(body, checkName, pr.pull_request.head.sha, failed)
+  await checks.addCheck(body, checkName, sha, failed)
 }
 
 function getManifests(changes: Changes): Set<string> {

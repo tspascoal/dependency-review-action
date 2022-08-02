@@ -245,13 +245,12 @@ function run() {
             const addedChanges = filteredChanges.filter(change => change.change_type === 'added' &&
                 change.vulnerabilities !== undefined &&
                 change.vulnerabilities.length > 0);
-            if (addedChanges.length > 0) {
-                for (const change of addedChanges) {
-                    printChangeVulnerabilities(change);
-                }
-                failed = true;
+            for (const change of addedChanges) {
+                printChangeVulnerabilities(change);
             }
-            yield addVulnerabilitiesCheck(addedChanges, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
+            failed = addedChanges.length > 0;
+            core.info('adding checks');
+            yield createVulnerabilitiesCheck(addedChanges, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
@@ -283,12 +282,13 @@ function run() {
         }
     });
 }
-function addVulnerabilitiesCheck(addedPackages, checkName, failed) {
+function createVulnerabilitiesCheck(addedPackages, checkName, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
         let body = '';
+        core.info(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
-            body = `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`;
+            body += `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';

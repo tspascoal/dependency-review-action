@@ -49,14 +49,13 @@ async function run(): Promise<void> {
         change.vulnerabilities.length > 0
     )
 
-    if (addedChanges.length > 0) {
-      for (const change of addedChanges) {
-        printChangeVulnerabilities(change)
-      }
-      failed = true
+    for (const change of addedChanges) {
+      printChangeVulnerabilities(change)
     }
+    failed = addedChanges.length > 0
 
-    await addVulnerabilitiesCheck(
+    core.info('adding checks')
+    await createVulnerabilitiesCheck(
       addedChanges,
       config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
       failed
@@ -100,7 +99,7 @@ async function run(): Promise<void> {
   }
 }
 
-async function addVulnerabilitiesCheck(
+async function createVulnerabilitiesCheck(
   addedPackages: Changes,
   checkName: string,
   failed: boolean
@@ -109,8 +108,10 @@ async function addVulnerabilitiesCheck(
 
   let body = ''
 
+  core.info(`found ${manifests.entries.length} manifests`)
+
   for (const manifest of manifests) {
-    body = `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
+    body += `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest

@@ -126,19 +126,17 @@ async function createVulnerabilitiesCheck(
           previous_version === change.version
 
         if (!sameAsPrevious) {
-          body += `\n| ${renderUrl(
+          body += `\n|${renderUrl(
             change.source_repository_url,
             change.name
-          )} | ${change.version} | ${renderUrl(
-            vuln.advisory_url,
-            vuln.advisory_summary
-          )}|${vuln.severity}|`
+          )} | ${change.version}|`
         } else {
-          body += `<td colspan=2></td><td>${renderUrl(
-            vuln.advisory_url,
-            vuln.advisory_summary
-          )}</td><td>${vuln.severity}</td>`
+          body += '|||'
         }
+        body += `|${renderUrl(vuln.advisory_url, vuln.advisory_summary)}|${
+          vuln.severity
+        }|`
+
         previous_package = change.name
         previous_version = change.version
       }

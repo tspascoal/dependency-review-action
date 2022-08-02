@@ -288,7 +288,7 @@ function createVulnerabilitiesCheck(addedPackages, checkName, failed) {
         let body = '';
         core.info(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
-            body += `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`;
+            body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';
@@ -299,14 +299,15 @@ function createVulnerabilitiesCheck(addedPackages, checkName, failed) {
                         body += `\n| ${renderUrl(change.source_repository_url, change.name)} | ${change.version} |${renderUrl(vuln.advisory_url, vuln.advisory_summary)}|vuln.severity`;
                     }
                     else {
-                        body += `\n| Span <td colspan=2></td><td>${renderUrl(vuln.advisory_url, vuln.advisory_summary)}</td><td>${vuln.severity}</td>`;
+                        body += `\n| <td colspan=2></td><td>${renderUrl(vuln.advisory_url, vuln.advisory_summary)}</td><td>${vuln.severity}</td>`;
                     }
                     previous_package = change.name;
                     previous_version = change.version;
                 }
             }
         }
-        yield checks.addCheck(body, checkName, github.context.sha, failed);
+        const pr = github.context.payload.pull_request;
+        yield checks.addCheck(body, checkName, pr.pull_request.head.sha, failed);
     });
 }
 function getManifests(changes) {

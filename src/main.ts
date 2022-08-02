@@ -9,6 +9,9 @@ import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
 
+// eslint-disable-next-line import/no-unresolved
+import {PullRequestEvent} from '@octokit/webhooks-types/schema'
+
 async function run(): Promise<void> {
   try {
     if (github.context.eventName !== 'pull_request') {
@@ -111,7 +114,7 @@ async function createVulnerabilitiesCheck(
   core.info(`found ${manifests.entries.length} manifests`)
 
   for (const manifest of manifests) {
-    body += `\nAdded known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
+    body += `\n## Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity |\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest
@@ -132,7 +135,7 @@ async function createVulnerabilitiesCheck(
             vuln.advisory_summary
           )}|vuln.severity`
         } else {
-          body += `\n| Span <td colspan=2></td><td>${renderUrl(
+          body += `\n| <td colspan=2></td><td>${renderUrl(
             vuln.advisory_url,
             vuln.advisory_summary
           )}</td><td>${vuln.severity}</td>`
@@ -143,7 +146,9 @@ async function createVulnerabilitiesCheck(
     }
   }
 
-  await checks.addCheck(body, checkName, github.context.sha, failed)
+  const pr = github.context.payload.pull_request as PullRequestEvent
+
+  await checks.addCheck(body, checkName, pr.pull_request.head.sha, failed)
 }
 
 function getManifests(changes: Changes): Set<string> {

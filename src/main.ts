@@ -129,14 +129,14 @@ async function createLicensesCheck(
     core.debug(`found ${manifests.entries.length} manifests for licenses`)
 
     if (config.allow_licenses && config.allow_licenses.length > 0) {
-      body += `\n> Allowed Licenses: ${config.allow_licenses.join(', ')}\n`
+      body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
     }
     if (config.deny_licenses && config.deny_licenses.length > 0) {
-      body += `\n> Denied Licenses: ${config.deny_licenses.join(', ')}\n`
+      body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
     }
 
     for (const manifest of manifests) {
-      body += `\n ### Manifest #{manifest} has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`
+      body += `\n ### Manifest ${manifest} has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`
 
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest

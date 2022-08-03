@@ -136,7 +136,7 @@ async function createLicensesCheck(
     }
 
     for (const manifest of manifests) {
-      body += `\n ### Manifest ${manifest} has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`
+      body += `\n ### Manifest _${manifest}_ has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`
 
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest
@@ -160,7 +160,7 @@ async function createLicensesCheck(
     body += `\n### Unknown Licenses\n`
 
     for (const manifest of manifests) {
-      body += `\n #### Manifest ${manifest}:\n|Package|Version|\n|---|---:|`
+      body += `\n #### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`
 
       for (const change of unknownLicensesErrors.filter(
         pkg => pkg.manifest === manifest
@@ -191,7 +191,7 @@ async function createVulnerabilitiesCheck(
   core.debug(`found ${manifests.entries.length} manifests`)
 
   for (const manifest of manifests) {
-    body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
+    body += `\n### Added known Vulnerabilities for _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest

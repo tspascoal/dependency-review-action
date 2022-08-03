@@ -294,7 +294,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
                 body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`;
             }
             for (const manifest of manifests) {
-                body += `\n ### Manifest ${manifest} has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`;
+                body += `\n ### Manifest _${manifest}_ has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`;
                 for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
                     body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
                 }
@@ -306,7 +306,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
             core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
             body += `\n### Unknown Licenses\n`;
             for (const manifest of manifests) {
-                body += `\n #### Manifest ${manifest}:\n|Package|Version|\n|---|---:|`;
+                body += `\n #### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`;
                 for (const change of unknownLicensesErrors.filter(pkg => pkg.manifest === manifest)) {
                     body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
                 }
@@ -323,7 +323,7 @@ function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, sever
             : '';
         core.debug(`found ${manifests.entries.length} manifests`);
         for (const manifest of manifests) {
-            body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
+            body += `\n### Added known Vulnerabilities for _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';

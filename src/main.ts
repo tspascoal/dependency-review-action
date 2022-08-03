@@ -4,7 +4,13 @@ import * as checks from './check'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
-import {Change, Changes, PullRequestSchema, Severity} from './schemas'
+import {
+  Change,
+  Changes,
+  ConfigurationOptions,
+  PullRequestSchema,
+  Severity
+} from './schemas'
 import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
@@ -75,7 +81,8 @@ async function run(): Promise<void> {
       unknownLicenses,
       pull_request.head.sha,
       config.check_name_license || 'Dependency Review Licenses',
-      licenseErrors.length > 0
+      licenseErrors.length > 0,
+      config
     )
 
     printNullLicenses(unknownLicenses)
@@ -111,7 +118,8 @@ async function createLicensesCheck(
   unknownLicensesErrors: Change[],
   sha: string,
   checkName: string,
-  failed: boolean
+  failed: boolean,
+  config: ConfigurationOptions
 ): Promise<void> {
   let body = ''
 
@@ -120,9 +128,15 @@ async function createLicensesCheck(
 
     core.debug(`found ${manifests.entries.length} manifests for licenses`)
 
+    if (config.allow_licenses && config.allow_licenses.length > 0) {
+      body += `\n> Allowed Licenses: ${config.allow_licenses.join(', ')}\n`
+    }
+    if (config.deny_licenses && config.deny_licenses.length > 0) {
+      body += `\n> Denied Licenses: ${config.deny_licenses.join(', ')}\n`
+    }
+
     for (const manifest of manifests) {
-      body +=
-        '\n ### Manifest #{manifest} have incompatible licenses:\n|Package|Version|License|\n|---|---:|---|'
+      body += `\n ### Manifest #{manifest} has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`
 
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest

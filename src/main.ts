@@ -123,6 +123,8 @@ async function createLicensesCheck(
 ): Promise<void> {
   let body = ''
 
+  core.info(`Licenses errors: ${JSON.stringify(licenseErrors)}`)
+
   if (licenseErrors.length > 0) {
     const manifests = getManifests(licenseErrors)
 

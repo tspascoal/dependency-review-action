@@ -284,6 +284,7 @@ function run() {
 function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkName, failed, config) {
     return __awaiter(this, void 0, void 0, function* () {
         let body = '';
+        core.info(`Licenses errors: ${JSON.stringify(licenseErrors)}`);
         if (licenseErrors.length > 0) {
             const manifests = getManifests(licenseErrors);
             core.debug(`found ${manifests.entries.length} manifests for licenses`);

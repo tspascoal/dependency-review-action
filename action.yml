@@ -19,6 +19,9 @@ inputs:
   check-name-vulnerabilities:
     description: The name of vulnerabilities check
     required: false
+  check-name-licenses:
+    description: The name of the licenses check
+    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'

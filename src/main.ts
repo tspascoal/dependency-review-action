@@ -4,7 +4,13 @@ import * as checks from './check'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
-import {Change, Changes, PullRequestSchema, Severity} from './schemas'
+import {
+  Change,
+  Changes,
+  ConfigurationOptions,
+  PullRequestSchema,
+  Severity
+} from './schemas'
 import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
@@ -70,6 +76,15 @@ async function run(): Promise<void> {
       core.setFailed('Dependency review detected incompatible licenses.')
     }
 
+    await createLicensesCheck(
+      licenseErrors,
+      unknownLicenses,
+      pull_request.head.sha,
+      config.check_name_license || 'Dependency Review Licenses',
+      licenseErrors.length > 0,
+      config
+    )
+
     printNullLicenses(unknownLicenses)
 
     if (failed) {
@@ -98,6 +113,70 @@ async function run(): Promise<void> {
   }
 }
 
+async function createLicensesCheck(
+  licenseErrors: Change[],
+  unknownLicensesErrors: Change[],
+  sha: string,
+  checkName: string,
+  failed: boolean,
+  config: ConfigurationOptions
+): Promise<void> {
+  let body = ''
+
+  if (licenseErrors.length > 0) {
+    const manifests = getManifests(licenseErrors)
+
+    core.debug(`found ${manifests.entries.length} manifests for licenses`)
+
+    if (config.allow_licenses && config.allow_licenses.length > 0) {
+      body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
+    }
+    if (config.deny_licenses && config.deny_licenses.length > 0) {
+      body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
+    }
+
+    body += `\n## Incompatible Licenses`
+
+    for (const manifest of manifests) {
+      body += `\n ### Manifest _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`
+
+      for (const change of licenseErrors.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
+          change.version
+        }|${change.license}|`
+      }
+    }
+  }
+
+  core.info(`found ${unknownLicensesErrors.length} unknown licenses`)
+
+  if (unknownLicensesErrors.length > 0) {
+    const manifests = getManifests(unknownLicensesErrors)
+
+    core.debug(
+      `found ${manifests.entries.length} manifests for unknown licenses`
+    )
+
+    body += `\n## Unknown Licenses\n`
+
+    for (const manifest of manifests) {
+      body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`
+
+      for (const change of unknownLicensesErrors.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
+          change.version
+        }|${change.license}|`
+      }
+    }
+  }
+
+  await checks.addCheck(body, checkName, sha, failed)
+}
+
 async function createVulnerabilitiesCheck(
   addedPackages: Changes,
   sha: string,
@@ -113,8 +192,12 @@ async function createVulnerabilitiesCheck(
 
   core.debug(`found ${manifests.entries.length} manifests`)
 
+  if (addedPackages.length > 0) {
+    body += `\n## Added known Vulnerabilities`
+  }
+
   for (const manifest of manifests) {
-    body += `\n### Added known Vulnerabilities for ${manifest}\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
+    body += `\n### Manifes _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest

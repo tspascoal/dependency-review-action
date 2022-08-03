@@ -284,7 +284,6 @@ function run() {
 function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkName, failed, config) {
     return __awaiter(this, void 0, void 0, function* () {
         let body = '';
-        core.info(`Licenses errors: ${JSON.stringify(licenseErrors)}`);
         if (licenseErrors.length > 0) {
             const manifests = getManifests(licenseErrors);
             core.debug(`found ${manifests.entries.length} manifests for licenses`);
@@ -298,7 +297,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
             for (const manifest of manifests) {
                 body += `\n ### Manifest _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`;
                 for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
-                    body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
+                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
                 }
             }
         }
@@ -310,7 +309,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
             for (const manifest of manifests) {
                 body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`;
                 for (const change of unknownLicensesErrors.filter(pkg => pkg.manifest === manifest)) {
-                    body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
+                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
                 }
             }
         }

@@ -123,8 +123,6 @@ async function createLicensesCheck(
 ): Promise<void> {
   let body = ''
 
-  core.info(`Licenses errors: ${JSON.stringify(licenseErrors)}`)
-
   if (licenseErrors.length > 0) {
     const manifests = getManifests(licenseErrors)
 
@@ -145,7 +143,7 @@ async function createLicensesCheck(
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest
       )) {
-        body += `\n|${renderUrl(change.package_url, change.name)}|${
+        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
           change.version
         }|${change.license}|`
       }
@@ -169,7 +167,7 @@ async function createLicensesCheck(
       for (const change of unknownLicensesErrors.filter(
         pkg => pkg.manifest === manifest
       )) {
-        body += `\n|${renderUrl(change.package_url, change.name)}|${
+        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
           change.version
         }|${change.license}|`
       }

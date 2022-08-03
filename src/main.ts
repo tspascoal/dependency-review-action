@@ -134,12 +134,31 @@ async function createLicensesCheck(
     }
   }
 
-  // Todo: unknown licenses
   core.info(`found ${unknownLicensesErrors.length} unknown licenses`)
 
-  await checks.addCheck(body, checkName, sha, failed)
+  if (unknownLicensesErrors.length > 0) {
+    const manifests = getManifests(unknownLicensesErrors)
 
-  // TODO: unkown licenses
+    core.debug(
+      `found ${manifests.entries.length} manifests for unknown licenses`
+    )
+
+    body += `\n### Unknown Licenses\n`
+
+    for (const manifest of manifests) {
+      body += '\n #### Manifest #{manifest}:\n|Package|Version|\n|---|---:|'
+
+      for (const change of unknownLicensesErrors.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        body += `\n|${renderUrl(change.package_url, change.name)}|${
+          change.version
+        }|${change.license}|`
+      }
+    }
+  }
+
+  await checks.addCheck(body, checkName, sha, failed)
 }
 
 async function createVulnerabilitiesCheck(

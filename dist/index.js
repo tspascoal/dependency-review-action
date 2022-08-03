@@ -295,10 +295,19 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
                 }
             }
         }
-        // Todo: unknown licenses
         core.info(`found ${unknownLicensesErrors.length} unknown licenses`);
+        if (unknownLicensesErrors.length > 0) {
+            const manifests = getManifests(unknownLicensesErrors);
+            core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
+            body += `\n### Unknown Licenses\n`;
+            for (const manifest of manifests) {
+                body += '\n #### Manifest #{manifest}:\n|Package|Version|\n|---|---:|';
+                for (const change of unknownLicensesErrors.filter(pkg => pkg.manifest === manifest)) {
+                    body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
+                }
+            }
+        }
         yield checks.addCheck(body, checkName, sha, failed);
-        // TODO: unkown licenses
     });
 }
 function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {

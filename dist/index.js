@@ -254,6 +254,7 @@ function run() {
                 printLicensesError(licenseErrors);
                 core.setFailed('Dependency review detected incompatible licenses.');
             }
+            yield createLicensesCheck(licenseErrors, unknownLicenses, pull_request.head.sha, config.check_name_license || 'Dependency Review Licenses', licenseErrors.length > 0);
             printNullLicenses(unknownLicenses);
             if (failed) {
                 core.setFailed('Dependency review detected vulnerable packages.');
@@ -278,6 +279,26 @@ function run() {
                 }
             }
         }
+    });
+}
+function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkName, failed) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let body = '';
+        if (licenseErrors.length > 0) {
+            const manifests = getManifests(licenseErrors);
+            core.debug(`found ${manifests.entries.length} manifests for licenses`);
+            for (const manifest of manifests) {
+                body +=
+                    '\n ### Manifest #{manifest} have incompatible licenses:\n|Package|Version|License|\n|---|---:|---|';
+                for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
+                    body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
+                }
+            }
+        }
+        // Todo: unknown licenses
+        core.info(`found ${unknownLicensesErrors.length} unknown licenses`);
+        yield checks.addCheck(body, checkName, sha, failed);
+        // TODO: unkown licenses
     });
 }
 function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {
@@ -420,7 +441,8 @@ exports.ConfigurationOptionsSchema = z
     fail_on_severity: z.enum(exports.SEVERITIES).default('low'),
     allow_licenses: z.array(z.string()).default([]),
     deny_licenses: z.array(z.string()).default([]),
-    check_name_vulnerability: z.string().nullable()
+    check_name_vulnerability: z.string().nullable(),
+    check_name_license: z.string().nullable()
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');
@@ -14119,11 +14141,13 @@ function readConfig() {
         throw new Error("Can't specify both allow_licenses and deny_licenses");
     }
     const check_name_vulnerability = getOptionalInput('check-name-vulnerabilities');
+    const check_name_license = getOptionalInput('check-name-licenses');
     return {
         fail_on_severity,
         allow_licenses: allow_licenses === null || allow_licenses === void 0 ? void 0 : allow_licenses.split(',').map(x => x.trim()),
         deny_licenses: deny_licenses === null || deny_licenses === void 0 ? void 0 : deny_licenses.split(',').map(x => x.trim()),
-        check_name_vulnerability
+        check_name_vulnerability,
+        check_name_license
     };
 }
 exports.readConfig = readConfig;
@@ -14226,7 +14250,8 @@ exports.ConfigurationOptionsSchema = z
     fail_on_severity: z.enum(exports.SEVERITIES).default('low'),
     allow_licenses: z.array(z.string()).default([]),
     deny_licenses: z.array(z.string()).default([]),
-    check_name_vulnerability: z.string().nullable()
+    check_name_vulnerability: z.string().nullable(),
+    check_name_license: z.string().nullable()
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');

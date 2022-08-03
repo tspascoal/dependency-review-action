@@ -70,6 +70,14 @@ async function run(): Promise<void> {
       core.setFailed('Dependency review detected incompatible licenses.')
     }
 
+    await createLicensesCheck(
+      licenseErrors,
+      unknownLicenses,
+      pull_request.head.sha,
+      config.check_name_license || 'Dependency Review Licenses',
+      licenseErrors.length > 0
+    )
+
     printNullLicenses(unknownLicenses)
 
     if (failed) {
@@ -96,6 +104,42 @@ async function run(): Promise<void> {
       }
     }
   }
+}
+
+async function createLicensesCheck(
+  licenseErrors: Change[],
+  unknownLicensesErrors: Change[],
+  sha: string,
+  checkName: string,
+  failed: boolean
+): Promise<void> {
+  let body = ''
+
+  if (licenseErrors.length > 0) {
+    const manifests = getManifests(licenseErrors)
+
+    core.debug(`found ${manifests.entries.length} manifests for licenses`)
+
+    for (const manifest of manifests) {
+      body +=
+        '\n ### Manifest #{manifest} have incompatible licenses:\n|Package|Version|License|\n|---|---:|---|'
+
+      for (const change of licenseErrors.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        body += `\n|${renderUrl(change.package_url, change.name)}|${
+          change.version
+        }|${change.license}|`
+      }
+    }
+  }
+
+  // Todo: unknown licenses
+  core.info(`found ${unknownLicensesErrors.length} unknown licenses`)
+
+  await checks.addCheck(body, checkName, sha, failed)
+
+  // TODO: unkown licenses
 }
 
 async function createVulnerabilitiesCheck(

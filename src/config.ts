@@ -23,10 +23,13 @@ export function readConfig(): ConfigurationOptions {
     'check-name-vulnerabilities'
   )
 
+  const check_name_license = getOptionalInput('check-name-licenses')
+
   return {
     fail_on_severity,
     allow_licenses: allow_licenses?.split(',').map(x => x.trim()),
     deny_licenses: deny_licenses?.split(',').map(x => x.trim()),
-    check_name_vulnerability
+    check_name_vulnerability,
+    check_name_license
   }
 }

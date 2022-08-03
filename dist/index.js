@@ -293,8 +293,9 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
             if (config.deny_licenses && config.deny_licenses.length > 0) {
                 body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`;
             }
+            body += `\n## Incompatible Licenses`;
             for (const manifest of manifests) {
-                body += `\n ### Manifest _${manifest}_ has incompatible licenses:\n|Package|Version|License|\n|---|---:|---|`;
+                body += `\n ### Manifest _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`;
                 for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
                     body += `\n|${renderUrl(change.package_url, change.name)}|${change.version}|${change.license}|`;
                 }
@@ -322,8 +323,11 @@ function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, sever
             ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
             : '';
         core.debug(`found ${manifests.entries.length} manifests`);
+        if (addedPackages.length > 0) {
+            body += `\n## Added known Vulnerabilities`;
+        }
         for (const manifest of manifests) {
-            body += `\n### Added known Vulnerabilities for _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
+            body += `\n### Manifes _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';

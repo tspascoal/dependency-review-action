@@ -146,7 +146,7 @@ async function createLicensesCheck(
     body += `\n### Unknown Licenses\n`
 
     for (const manifest of manifests) {
-      body += '\n #### Manifest ${manifest}:\n|Package|Version|\n|---|---:|'
+      body += `\n #### Manifest ${manifest}:\n|Package|Version|\n|---|---:|`
 
       for (const change of unknownLicensesErrors.filter(
         pkg => pkg.manifest === manifest

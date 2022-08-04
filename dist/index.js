@@ -300,7 +300,7 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
         if (licenseErrors.length > 0) {
             const rows = [];
             const manifests = getManifests(licenseErrors);
-            core.summary.addHeading('Incompatible Licenses', 3);
+            core.summary.addHeading('Incompatible Licenses', 3).addSeparator();
             for (const manifest of manifests) {
                 core.summary.addHeading(`<em>${manifest}</em>`, 4);
                 for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
@@ -321,7 +321,7 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
             const rows = [];
             const manifests = getManifests(unknownLicenses);
             core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
-            core.summary.addHeading('Unknown Licenses', 3);
+            core.summary.addHeading('Unknown Licenses', 3).addSeparator();
             for (const manifest of manifests) {
                 core.summary.addHeading(`<em>${manifest}</em>`, 4);
                 for (const change of unknownLicenses.filter(pkg => pkg.manifest === manifest)) {

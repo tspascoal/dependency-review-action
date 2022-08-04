@@ -191,8 +191,8 @@ function run() {
                     printChangeVulnerabilities(change);
                 }
                 failed = true;
-                yield addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '');
             }
+            yield addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '');
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
                 core.setFailed('Dependency review detected incompatible licenses.');
@@ -233,6 +233,7 @@ function printChangeVulnerabilities(change) {
 function addSummaryToSummary(addedPackages, licenseErrors, unknownLicenses) {
     return __awaiter(this, void 0, void 0, function* () {
         core.summary
+            .addHeading('Dependency Review Summary')
             .addQuote(`We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`)
             .write();
     });
@@ -242,7 +243,7 @@ function addChangeVulnerabilitiesToSummary(addedPackages, severity) {
         const rows = [];
         const manifests = getManifests(addedPackages);
         core.summary
-            .addHeading('Dependency Review Vulnerabilities')
+            .addHeading('Vulnerabilities')
             .addQuote(`Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`);
         if (addedPackages.length === 0) {
             yield core.summary

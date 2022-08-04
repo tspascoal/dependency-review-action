@@ -65,9 +65,9 @@ async function run(): Promise<void> {
         printChangeVulnerabilities(change)
       }
       failed = true
-
-      await addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
     }
+
+    await addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
 
     if (licenseErrors.length > 0) {
       printLicensesError(licenseErrors)
@@ -123,6 +123,7 @@ async function addSummaryToSummary(
   unknownLicenses: Change[]
 ): Promise<void> {
   core.summary
+    .addHeading('Dependency Review Summary')
     .addQuote(
       `We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`
     )
@@ -138,7 +139,7 @@ async function addChangeVulnerabilitiesToSummary(
   const manifests = getManifests(addedPackages)
 
   core.summary
-    .addHeading('Dependency Review Vulnerabilities')
+    .addHeading('Vulnerabilities')
     .addQuote(
       `Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`
     )

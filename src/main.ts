@@ -209,10 +209,10 @@ async function addLicensesToSummary(
     const rows: SummaryTableRow[] = []
     const manifests = getManifests(licenseErrors)
 
-    core.summary.addHeading('Incompatible Licenses')
+    core.summary.addHeading('Incompatible Licenses', 3)
 
     for (const manifest of manifests) {
-      core.summary.addHeading(`<em>${manifest}</em>`, 3)
+      core.summary.addHeading(`<em>${manifest}</em>`, 4)
 
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest
@@ -238,12 +238,10 @@ async function addLicensesToSummary(
       `found ${manifests.entries.length} manifests for unknown licenses`
     )
 
-    core.summary.addHeading('Unknown Licenses')
-
-    core.summary.addDetails('test', 'test')
+    core.summary.addHeading('Unknown Licenses', 3)
 
     for (const manifest of manifests) {
-      core.summary.addHeading(`<em>${manifest}</em>`, 3)
+      core.summary.addHeading(`<em>${manifest}</em>`, 4)
 
       for (const change of unknownLicenses.filter(
         pkg => pkg.manifest === manifest

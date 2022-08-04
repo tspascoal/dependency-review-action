@@ -190,7 +190,7 @@ function run() {
                     printChangeVulnerabilities(change);
                 }
                 failed = true;
-                yield showSummaryChangeVulnerabilities(addedChanges, minSeverity || '');
+                yield addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '');
             }
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
@@ -198,6 +198,7 @@ function run() {
                 core.setFailed('Dependency review detected incompatible licenses.');
             }
             printNullLicenses(unknownLicenses);
+            yield addLicensesToSummary(licenseErrors, unknownLicenses, config);
             if (failed) {
                 core.setFailed('Dependency review detected vulnerable packages.');
             }
@@ -229,7 +230,7 @@ function printChangeVulnerabilities(change) {
         core.info(`  ↪ ${vuln.advisory_url}`);
     }
 }
-function showSummaryChangeVulnerabilities(addedPackages, severity) {
+function addChangeVulnerabilitiesToSummary(addedPackages, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const rows = [];
         const manifests = getManifests(addedPackages);
@@ -261,8 +262,8 @@ function showSummaryChangeVulnerabilities(addedPackages, severity) {
             }
             yield core.summary
                 .addHeading('Dependency Review Vulnerabilities')
-                .addQuote(`Vulnerabilites were filtered by mininum _${severity}_ or higher.`)
-                .addHeading(`_${manifest}_`, 3)
+                .addQuote(`Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`)
+                .addHeading(`<em>${manifest}</em>`, 3)
                 .addTable([
                 [
                     { data: 'Name', header: true },
@@ -276,6 +277,35 @@ function showSummaryChangeVulnerabilities(addedPackages, severity) {
         }
     });
 }
+function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // const rows: SummaryTableRow[] = []
+        // core.info(licenseErrors.length + ' license errors found.')
+        // core.info(unknownLicenses.length + ' unknown licenses found.')
+        core.summary.addHeading('Licenses');
+        if (config.allow_licenses && config.allow_licenses.length > 0) {
+            core.summary.addQuote(`<strong>Allowed Licenses</strong>: ${config.allow_licenses.join(', ')}`);
+        }
+        if (config.deny_licenses && config.deny_licenses.length > 0) {
+            core.summary.addQuote(`<strong>Denied Licenses</strong>: ${config.deny_licenses.join(', ')}`);
+        }
+        yield core.summary.write();
+    });
+}
+// function async addLicensesToSummary(
+//   licenseErrors: Change[],
+//   unknownLicensesErrors: Change[],
+//   config: ConfigurationOptions
+// ): Promise<void> {
+//   core.summary.addHeading('Licenses')
+//   // if (config.allow_licenses && config.allow_licenses.length > 0) {
+//   //   body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
+//   // }
+//   // if (config.deny_licenses && config.deny_licenses.length > 0) {
+//   //   body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
+//   // }
+//   await core.summary.write()
+// }
 function getManifests(changes) {
     return new Set(changes.flatMap(c => c.manifest));
 }

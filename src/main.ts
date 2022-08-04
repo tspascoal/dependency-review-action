@@ -3,7 +3,13 @@ import * as dependencyGraph from './dependency-graph'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
-import {Change, Changes, PullRequestSchema, Severity} from './schemas'
+import {
+  Change,
+  Changes,
+  ConfigurationOptions,
+  PullRequestSchema,
+  Severity
+} from './schemas'
 import {readConfig} from '../src/config'
 import {filterChangesBySeverity} from '../src/filter'
 import {getDeniedLicenseChanges} from './licenses'
@@ -55,7 +61,7 @@ async function run(): Promise<void> {
       }
       failed = true
 
-      await showSummaryChangeVulnerabilities(addedChanges, minSeverity || '')
+      await addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
     }
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
@@ -69,6 +75,8 @@ async function run(): Promise<void> {
     }
 
     printNullLicenses(unknownLicenses)
+
+    await addLicensesToSummary(licenseErrors, unknownLicenses, config)
 
     if (failed) {
       core.setFailed('Dependency review detected vulnerable packages.')
@@ -109,7 +117,7 @@ function printChangeVulnerabilities(change: Change): void {
   }
 }
 
-async function showSummaryChangeVulnerabilities(
+async function addChangeVulnerabilitiesToSummary(
   addedPackages: Changes,
   severity: string
 ): Promise<void> {
@@ -150,9 +158,9 @@ async function showSummaryChangeVulnerabilities(
     await core.summary
       .addHeading('Dependency Review Vulnerabilities')
       .addQuote(
-        `Vulnerabilites were filtered by mininum _${severity}_ or higher.`
+        `Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`
       )
-      .addHeading(`_${manifest}_`, 3)
+      .addHeading(`<em>${manifest}</em>`, 3)
       .addTable([
         [
           {data: 'Name', header: true},
@@ -165,6 +173,49 @@ async function showSummaryChangeVulnerabilities(
       .write()
   }
 }
+
+async function addLicensesToSummary(
+  licenseErrors: Change[],
+  unknownLicenses: Change[],
+  config: ConfigurationOptions
+): Promise<void> {
+  // const rows: SummaryTableRow[] = []
+
+  // core.info(licenseErrors.length + ' license errors found.')
+  // core.info(unknownLicenses.length + ' unknown licenses found.')
+
+  core.summary.addHeading('Licenses')
+
+  if (config.allow_licenses && config.allow_licenses.length > 0) {
+    core.summary.addQuote(
+      `<strong>Allowed Licenses</strong>: ${config.allow_licenses.join(', ')}`
+    )
+  }
+  if (config.deny_licenses && config.deny_licenses.length > 0) {
+    core.summary.addQuote(
+      `<strong>Denied Licenses</strong>: ${config.deny_licenses.join(', ')}`
+    )
+  }
+
+  await core.summary.write()
+}
+
+// function async addLicensesToSummary(
+//   licenseErrors: Change[],
+//   unknownLicensesErrors: Change[],
+//   config: ConfigurationOptions
+// ): Promise<void> {
+//   core.summary.addHeading('Licenses')
+
+//   // if (config.allow_licenses && config.allow_licenses.length > 0) {
+//   //   body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
+//   // }
+//   // if (config.deny_licenses && config.deny_licenses.length > 0) {
+//   //   body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
+//   // }
+
+//   await core.summary.write()
+// }
 
 function getManifests(changes: Changes): Set<string> {
   return new Set(changes.flatMap(c => c.manifest))

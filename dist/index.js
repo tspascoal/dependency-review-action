@@ -233,8 +233,8 @@ function printChangeVulnerabilities(change) {
 function addSummaryToSummary(addedPackages, licenseErrors, unknownLicenses) {
     return __awaiter(this, void 0, void 0, function* () {
         core.summary
-            .addHeading('Dependency Review Summary')
-            .addQuote(`We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`)
+            .addHeading('Dependency Review')
+            .addRaw(`We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`)
             .write();
     });
 }

@@ -123,8 +123,8 @@ async function addSummaryToSummary(
   unknownLicenses: Change[]
 ): Promise<void> {
   core.summary
-    .addHeading('Dependency Review Summary')
-    .addQuote(
+    .addHeading('Dependency Review')
+    .addRaw(
       `We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`
     )
     .write()

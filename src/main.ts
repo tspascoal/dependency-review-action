@@ -43,17 +43,22 @@ async function run(): Promise<void> {
       deny: config.deny_licenses
     }
 
-    const filteredChanges = filterChangesBySeverity(
+    const addedChanges = filterChangesBySeverity(
       minSeverity as Severity,
       changes
-    )
-
-    const addedChanges = filteredChanges.filter(
+    ).filter(
       change =>
         change.change_type === 'added' &&
         change.vulnerabilities !== undefined &&
         change.vulnerabilities.length > 0
     )
+
+    const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
+      changes,
+      licenses
+    )
+
+    await addSummaryToSummary(addedChanges, licenseErrors, unknownLicenses)
 
     if (addedChanges.length > 0) {
       for (const change of addedChanges) {
@@ -63,11 +68,6 @@ async function run(): Promise<void> {
 
       await addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
     }
-
-    const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
-      changes,
-      licenses
-    )
 
     if (licenseErrors.length > 0) {
       printLicensesError(licenseErrors)
@@ -115,6 +115,18 @@ function printChangeVulnerabilities(change: Change): void {
     )
     core.info(`  ↪ ${vuln.advisory_url}`)
   }
+}
+
+async function addSummaryToSummary(
+  addedPackages: Changes,
+  licenseErrors: Change[],
+  unknownLicenses: Change[]
+): Promise<void> {
+  core.summary
+    .addQuote(
+      `We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`
+    )
+    .write()
 }
 
 async function addChangeVulnerabilitiesToSummary(
@@ -229,7 +241,7 @@ async function addLicensesToSummary(
     core.summary.addQuote('No license violations detected.')
   }
 
-  core.info(`found ${unknownLicenses.length} unknown licenses`)
+  core.debug(`found ${unknownLicenses.length} unknown licenses`)
 
   if (unknownLicenses.length > 0) {
     const rows: SummaryTableRow[] = []
@@ -259,23 +271,6 @@ async function addLicensesToSummary(
 
   await core.summary.write()
 }
-
-// function async addLicensesToSummary(
-//   licenseErrors: Change[],
-//   unknownLicensesErrors: Change[],
-//   config: ConfigurationOptions
-// ): Promise<void> {
-//   core.summary.addHeading('Licenses')
-
-//   // if (config.allow_licenses && config.allow_licenses.length > 0) {
-//   //   body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
-//   // }
-//   // if (config.deny_licenses && config.deny_licenses.length > 0) {
-//   //   body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
-//   // }
-
-//   await core.summary.write()
-// }
 
 function getManifests(changes: Changes): Set<string> {
   return new Set(changes.flatMap(c => c.manifest))

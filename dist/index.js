@@ -287,8 +287,6 @@ function addChangeVulnerabilitiesToSummary(addedPackages, severity) {
 }
 function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
     return __awaiter(this, void 0, void 0, function* () {
-        // core.info(licenseErrors.length + ' license errors found.')
-        // core.info(unknownLicenses.length + ' unknown licenses found.')
         core.summary.addHeading('Licenses');
         if (config.allow_licenses && config.allow_licenses.length > 0) {
             core.summary.addQuote(`<strong>Allowed Licenses</strong>: ${config.allow_licenses.join(', ')}`);

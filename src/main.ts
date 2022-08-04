@@ -204,6 +204,8 @@ async function addLicensesToSummary(
     const rows: SummaryTableRow[] = []
     const manifests = getManifests(licenseErrors)
 
+    core.summary.addHeading('Incompatible Licenses')
+
     for (const manifest of manifests) {
       core.summary.addHeading(`<em>${manifest}</em>`, 3)
 
@@ -217,6 +219,34 @@ async function addLicensesToSummary(
         ])
 
         core.summary.addTable([['Package', 'Version', 'License'], ...rows])
+      }
+    }
+  }
+
+  core.info(`found ${unknownLicenses.length} unknown licenses`)
+
+  if (unknownLicenses.length > 0) {
+    const rows: SummaryTableRow[] = []
+    const manifests = getManifests(unknownLicenses)
+
+    core.debug(
+      `found ${manifests.entries.length} manifests for unknown licenses`
+    )
+
+    core.summary.addHeading('Unknown Licenses')
+
+    for (const manifest of manifests) {
+      core.summary.addHeading(`<em>${manifest}</em>`, 3)
+
+      for (const change of unknownLicenses.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        rows.push([
+          renderUrl(change.source_repository_url, change.name),
+          change.version
+        ])
+
+        core.summary.addTable([['Package', 'Version'], ...rows])
       }
     }
   }

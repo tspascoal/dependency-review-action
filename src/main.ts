@@ -55,9 +55,7 @@ async function run(): Promise<void> {
       }
       failed = true
 
-      if (config.show_summary) {
-        await showSummaryChangeVulnerabilities(addedChanges)
-      }
+      await showSummaryChangeVulnerabilities(addedChanges, minSeverity || '')
     }
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
@@ -112,7 +110,8 @@ function printChangeVulnerabilities(change: Change): void {
 }
 
 async function showSummaryChangeVulnerabilities(
-  addedPackages: Changes
+  addedPackages: Changes,
+  severity: string
 ): Promise<void> {
   const rows: SummaryTableRow[] = []
 
@@ -149,7 +148,11 @@ async function showSummaryChangeVulnerabilities(
     }
 
     await core.summary
-      .addHeading(`Added known Vulnerabilities for ${manifest}`)
+      .addHeading('Dependency Review Vulnerabilities')
+      .addQuote(
+        `Vulnerabilites were filtered by mininum _${severity}_ or higher.`
+      )
+      .addHeading(`_${manifest}_`, 3)
       .addTable([
         [
           {data: 'Name', header: true},

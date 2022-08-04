@@ -222,9 +222,8 @@ async function addLicensesToSummary(
           change.version,
           change.license || ''
         ])
-
-        core.summary.addTable([['Package', 'Version', 'License'], ...rows])
       }
+      core.summary.addTable([['Package', 'Version', 'License'], ...rows])
     }
   } else {
     core.summary.addQuote('No license violations detected.')

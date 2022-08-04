@@ -309,8 +309,8 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
                         change.version,
                         change.license || ''
                     ]);
-                    core.summary.addTable([['Package', 'Version', 'License'], ...rows]);
                 }
+                core.summary.addTable([['Package', 'Version', 'License'], ...rows]);
             }
         }
         else {

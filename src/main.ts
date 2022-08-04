@@ -58,7 +58,7 @@ async function run(): Promise<void> {
       licenses
     )
 
-    await addSummaryToSummary(addedChanges, licenseErrors, unknownLicenses)
+    addSummaryToSummary(addedChanges, licenseErrors, unknownLicenses)
 
     if (addedChanges.length > 0) {
       for (const change of addedChanges) {
@@ -67,7 +67,7 @@ async function run(): Promise<void> {
       failed = true
     }
 
-    await addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
+    addChangeVulnerabilitiesToSummary(addedChanges, minSeverity || '')
 
     if (licenseErrors.length > 0) {
       printLicensesError(licenseErrors)
@@ -76,7 +76,7 @@ async function run(): Promise<void> {
 
     printNullLicenses(unknownLicenses)
 
-    await addLicensesToSummary(licenseErrors, unknownLicenses, config)
+    addLicensesToSummary(licenseErrors, unknownLicenses, config)
 
     if (failed) {
       core.setFailed('Dependency review detected vulnerable packages.')
@@ -101,6 +101,8 @@ async function run(): Promise<void> {
         core.setFailed('Unexpected fatal error')
       }
     }
+  } finally {
+    await core.summary.write()
   }
 }
 
@@ -117,23 +119,22 @@ function printChangeVulnerabilities(change: Change): void {
   }
 }
 
-async function addSummaryToSummary(
+function addSummaryToSummary(
   addedPackages: Changes,
   licenseErrors: Change[],
   unknownLicenses: Change[]
-): Promise<void> {
+): void {
   core.summary
     .addHeading('Dependency Review')
     .addRaw(
-      `We found ${addedPackages.length} vulnerable packages, ${licenseErrors.length} packages with incompatible licenses, and ${unknownLicenses.length} packages with unknown licenses.`
+      `We found ${addedPackages.length} vulnerable package(s), ${licenseErrors.length} package()s with incompatible licenses, and ${unknownLicenses.length} package(s) with unknown licenses.`
     )
-    .write()
 }
 
-async function addChangeVulnerabilitiesToSummary(
+function addChangeVulnerabilitiesToSummary(
   addedPackages: Changes,
   severity: string
-): Promise<void> {
+): void {
   const rows: SummaryTableRow[] = []
 
   const manifests = getManifests(addedPackages)
@@ -145,9 +146,7 @@ async function addChangeVulnerabilitiesToSummary(
     )
 
   if (addedPackages.length === 0) {
-    await core.summary
-      .addQuote('No vulnerabilities found in added packages.')
-      .write()
+    core.summary.addQuote('No vulnerabilities found in added packages.')
     return
   }
 
@@ -180,26 +179,23 @@ async function addChangeVulnerabilitiesToSummary(
         previous_version = change.version
       }
     }
-    await core.summary
-      .addHeading(`<em>${manifest}</em>`, 3)
-      .addTable([
-        [
-          {data: 'Name', header: true},
-          {data: 'Version', header: true},
-          {data: 'Vulnerability', header: true},
-          {data: 'Severity', header: true}
-        ],
-        ...rows
-      ])
-      .write()
+    core.summary.addHeading(`<em>${manifest}</em>`, 3).addTable([
+      [
+        {data: 'Name', header: true},
+        {data: 'Version', header: true},
+        {data: 'Vulnerability', header: true},
+        {data: 'Severity', header: true}
+      ],
+      ...rows
+    ])
   }
 }
 
-async function addLicensesToSummary(
+function addLicensesToSummary(
   licenseErrors: Change[],
   unknownLicenses: Change[],
   config: ConfigurationOptions
-): Promise<void> {
+): void {
   core.summary.addHeading('Licenses')
 
   if (config.allow_licenses && config.allow_licenses.length > 0) {
@@ -214,7 +210,7 @@ async function addLicensesToSummary(
   }
 
   if (licenseErrors.length === 0 && unknownLicenses.length === 0) {
-    core.summary.addQuote('No license violations detected.').write()
+    core.summary.addQuote('No license violations detected.')
     return
   }
 
@@ -269,8 +265,6 @@ async function addLicensesToSummary(
       core.summary.addTable([['Package', 'Version'], ...rows])
     }
   }
-
-  await core.summary.write()
 }
 
 function getManifests(changes: Changes): Set<string> {

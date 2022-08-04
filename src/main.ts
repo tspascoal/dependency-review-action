@@ -125,52 +125,60 @@ async function addChangeVulnerabilitiesToSummary(
 
   const manifests = getManifests(addedPackages)
 
-  for (const manifest of manifests) {
-    for (const change of addedPackages.filter(
-      pkg => pkg.manifest === manifest
-    )) {
-      let previous_package = ''
-      let previous_version = ''
-      for (const vuln of change.vulnerabilities) {
-        const sameAsPrevious =
-          previous_package === change.name &&
-          previous_version === change.version
+  core.summary
+    .addHeading('Dependency Review Vulnerabilities')
+    .addQuote(
+      `Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`
+    )
 
-        if (!sameAsPrevious) {
-          rows.push([
-            renderUrl(change.source_repository_url, change.name),
-            change.version,
-            renderUrl(vuln.advisory_url, vuln.advisory_summary),
-            vuln.severity
-          ])
-        } else {
-          rows.push([
-            {data: '', colspan: '2'},
-            renderUrl(vuln.advisory_url, vuln.advisory_summary),
-            vuln.severity
-          ])
-        }
-        previous_package = change.name
-        previous_version = change.version
-      }
-    }
-
+  if (addedPackages.length === 0) {
     await core.summary
-      .addHeading('Dependency Review Vulnerabilities')
-      .addQuote(
-        `Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`
-      )
-      .addHeading(`<em>${manifest}</em>`, 3)
-      .addTable([
-        [
-          {data: 'Name', header: true},
-          {data: 'Version', header: true},
-          {data: 'Vulnerability', header: true},
-          {data: 'Severity', header: true}
-        ],
-        ...rows
-      ])
+      .addQuote('No vulnerabilities found in added packages.')
       .write()
+  } else {
+    for (const manifest of manifests) {
+      for (const change of addedPackages.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        let previous_package = ''
+        let previous_version = ''
+        for (const vuln of change.vulnerabilities) {
+          const sameAsPrevious =
+            previous_package === change.name &&
+            previous_version === change.version
+
+          if (!sameAsPrevious) {
+            rows.push([
+              renderUrl(change.source_repository_url, change.name),
+              change.version,
+              renderUrl(vuln.advisory_url, vuln.advisory_summary),
+              vuln.severity
+            ])
+          } else {
+            rows.push([
+              {data: '', colspan: '2'},
+              renderUrl(vuln.advisory_url, vuln.advisory_summary),
+              vuln.severity
+            ])
+          }
+          previous_package = change.name
+          previous_version = change.version
+        }
+      }
+
+      await core.summary
+        .addHeading(`<em>${manifest}</em>`, 3)
+        .addTable([
+          [
+            {data: 'Name', header: true},
+            {data: 'Version', header: true},
+            {data: 'Vulnerability', header: true},
+            {data: 'Severity', header: true}
+          ],
+          ...rows
+        ])
+        .write()
+    }
   }
 }
 
@@ -179,11 +187,6 @@ async function addLicensesToSummary(
   unknownLicenses: Change[],
   config: ConfigurationOptions
 ): Promise<void> {
-  // const rows: SummaryTableRow[] = []
-
-  // core.info(licenseErrors.length + ' license errors found.')
-  // core.info(unknownLicenses.length + ' unknown licenses found.')
-
   core.summary.addHeading('Licenses')
 
   if (config.allow_licenses && config.allow_licenses.length > 0) {
@@ -195,6 +198,27 @@ async function addLicensesToSummary(
     core.summary.addQuote(
       `<strong>Denied Licenses</strong>: ${config.deny_licenses.join(', ')}`
     )
+  }
+
+  if (licenseErrors.length > 0) {
+    const rows: SummaryTableRow[] = []
+    const manifests = getManifests(licenseErrors)
+
+    for (const manifest of manifests) {
+      core.summary.addHeading(`<em>${manifest}</em>`, 3)
+
+      for (const change of licenseErrors.filter(
+        pkg => pkg.manifest === manifest
+      )) {
+        rows.push([
+          renderUrl(change.source_repository_url, change.name),
+          change.version,
+          change.license || ''
+        ])
+
+        core.summary.addTable([['Package', 'Version', 'License'], ...rows])
+      }
+    }
   }
 
   await core.summary.write()

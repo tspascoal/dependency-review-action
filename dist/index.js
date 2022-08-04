@@ -234,52 +234,59 @@ function addChangeVulnerabilitiesToSummary(addedPackages, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const rows = [];
         const manifests = getManifests(addedPackages);
-        for (const manifest of manifests) {
-            for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
-                let previous_package = '';
-                let previous_version = '';
-                for (const vuln of change.vulnerabilities) {
-                    const sameAsPrevious = previous_package === change.name &&
-                        previous_version === change.version;
-                    if (!sameAsPrevious) {
-                        rows.push([
-                            renderUrl(change.source_repository_url, change.name),
-                            change.version,
-                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
-                            vuln.severity
-                        ]);
-                    }
-                    else {
-                        rows.push([
-                            { data: '', colspan: '2' },
-                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
-                            vuln.severity
-                        ]);
-                    }
-                    previous_package = change.name;
-                    previous_version = change.version;
-                }
-            }
+        core.summary
+            .addHeading('Dependency Review Vulnerabilities')
+            .addQuote(`Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`);
+        if (addedPackages.length === 0) {
             yield core.summary
-                .addHeading('Dependency Review Vulnerabilities')
-                .addQuote(`Vulnerabilites were filtered by mininum severity <strong>${severity}</strong>.`)
-                .addHeading(`<em>${manifest}</em>`, 3)
-                .addTable([
-                [
-                    { data: 'Name', header: true },
-                    { data: 'Version', header: true },
-                    { data: 'Vulnerability', header: true },
-                    { data: 'Severity', header: true }
-                ],
-                ...rows
-            ])
+                .addQuote('No vulnerabilities found in added packages.')
                 .write();
+        }
+        else {
+            for (const manifest of manifests) {
+                for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
+                    let previous_package = '';
+                    let previous_version = '';
+                    for (const vuln of change.vulnerabilities) {
+                        const sameAsPrevious = previous_package === change.name &&
+                            previous_version === change.version;
+                        if (!sameAsPrevious) {
+                            rows.push([
+                                renderUrl(change.source_repository_url, change.name),
+                                change.version,
+                                renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                                vuln.severity
+                            ]);
+                        }
+                        else {
+                            rows.push([
+                                { data: '', colspan: '2' },
+                                renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                                vuln.severity
+                            ]);
+                        }
+                        previous_package = change.name;
+                        previous_version = change.version;
+                    }
+                }
+                yield core.summary
+                    .addHeading(`<em>${manifest}</em>`, 3)
+                    .addTable([
+                    [
+                        { data: 'Name', header: true },
+                        { data: 'Version', header: true },
+                        { data: 'Vulnerability', header: true },
+                        { data: 'Severity', header: true }
+                    ],
+                    ...rows
+                ])
+                    .write();
+            }
         }
     });
 }
 function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
     return __awaiter(this, void 0, void 0, function* () {
-        // const rows: SummaryTableRow[] = []
         // core.info(licenseErrors.length + ' license errors found.')
         // core.info(unknownLicenses.length + ' unknown licenses found.')
         core.summary.addHeading('Licenses');
@@ -288,6 +295,21 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
         }
         if (config.deny_licenses && config.deny_licenses.length > 0) {
             core.summary.addQuote(`<strong>Denied Licenses</strong>: ${config.deny_licenses.join(', ')}`);
+        }
+        if (licenseErrors.length > 0) {
+            const rows = [];
+            const manifests = getManifests(licenseErrors);
+            for (const manifest of manifests) {
+                core.summary.addHeading(`<em>${manifest}</em>`, 3);
+                for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
+                    rows.push([
+                        renderUrl(change.source_repository_url, change.name),
+                        change.version,
+                        change.license || ''
+                    ]);
+                    core.summary.addTable([['Package', 'Version', 'License'], ...rows]);
+                }
+            }
         }
         yield core.summary.write();
     });

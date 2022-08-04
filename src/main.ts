@@ -240,6 +240,8 @@ async function addLicensesToSummary(
 
     core.summary.addHeading('Unknown Licenses')
 
+    core.summary.addDetails('test', 'test')
+
     for (const manifest of manifests) {
       core.summary.addHeading(`<em>${manifest}</em>`, 3)
 
@@ -250,9 +252,9 @@ async function addLicensesToSummary(
           renderUrl(change.source_repository_url, change.name),
           change.version
         ])
-
-        core.summary.addTable([['Package', 'Version'], ...rows])
       }
+
+      core.summary.addTable([['Package', 'Version'], ...rows])
     }
   }
 

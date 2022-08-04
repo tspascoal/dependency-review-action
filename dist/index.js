@@ -320,6 +320,7 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
             const manifests = getManifests(unknownLicenses);
             core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
             core.summary.addHeading('Unknown Licenses');
+            core.summary.addDetails('test', 'test');
             for (const manifest of manifests) {
                 core.summary.addHeading(`<em>${manifest}</em>`, 3);
                 for (const change of unknownLicenses.filter(pkg => pkg.manifest === manifest)) {
@@ -327,8 +328,8 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
                         renderUrl(change.source_repository_url, change.name),
                         change.version
                     ]);
-                    core.summary.addTable([['Package', 'Version'], ...rows]);
                 }
+                core.summary.addTable([['Package', 'Version'], ...rows]);
             }
         }
         yield core.summary.write();

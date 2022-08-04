@@ -241,47 +241,46 @@ function addChangeVulnerabilitiesToSummary(addedPackages, severity) {
             yield core.summary
                 .addQuote('No vulnerabilities found in added packages.')
                 .write();
+            return;
         }
-        else {
-            for (const manifest of manifests) {
-                for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
-                    let previous_package = '';
-                    let previous_version = '';
-                    for (const vuln of change.vulnerabilities) {
-                        const sameAsPrevious = previous_package === change.name &&
-                            previous_version === change.version;
-                        if (!sameAsPrevious) {
-                            rows.push([
-                                renderUrl(change.source_repository_url, change.name),
-                                change.version,
-                                renderUrl(vuln.advisory_url, vuln.advisory_summary),
-                                vuln.severity
-                            ]);
-                        }
-                        else {
-                            rows.push([
-                                { data: '', colspan: '2' },
-                                renderUrl(vuln.advisory_url, vuln.advisory_summary),
-                                vuln.severity
-                            ]);
-                        }
-                        previous_package = change.name;
-                        previous_version = change.version;
+        for (const manifest of manifests) {
+            for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
+                let previous_package = '';
+                let previous_version = '';
+                for (const vuln of change.vulnerabilities) {
+                    const sameAsPrevious = previous_package === change.name &&
+                        previous_version === change.version;
+                    if (!sameAsPrevious) {
+                        rows.push([
+                            renderUrl(change.source_repository_url, change.name),
+                            change.version,
+                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                            vuln.severity
+                        ]);
                     }
+                    else {
+                        rows.push([
+                            { data: '', colspan: '2' },
+                            renderUrl(vuln.advisory_url, vuln.advisory_summary),
+                            vuln.severity
+                        ]);
+                    }
+                    previous_package = change.name;
+                    previous_version = change.version;
                 }
-                yield core.summary
-                    .addHeading(`<em>${manifest}</em>`, 3)
-                    .addTable([
-                    [
-                        { data: 'Name', header: true },
-                        { data: 'Version', header: true },
-                        { data: 'Vulnerability', header: true },
-                        { data: 'Severity', header: true }
-                    ],
-                    ...rows
-                ])
-                    .write();
             }
+            yield core.summary
+                .addHeading(`<em>${manifest}</em>`, 3)
+                .addTable([
+                [
+                    { data: 'Name', header: true },
+                    { data: 'Version', header: true },
+                    { data: 'Vulnerability', header: true },
+                    { data: 'Severity', header: true }
+                ],
+                ...rows
+            ])
+                .write();
         }
     });
 }
@@ -313,6 +312,9 @@ function addLicensesToSummary(licenseErrors, unknownLicenses, config) {
                     core.summary.addTable([['Package', 'Version', 'License'], ...rows]);
                 }
             }
+        }
+        else {
+            core.summary.addQuote('No license violations detected.');
         }
         core.info(`found ${unknownLicenses.length} unknown licenses`);
         if (unknownLicenses.length > 0) {

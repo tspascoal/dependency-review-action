@@ -200,6 +200,11 @@ async function addLicensesToSummary(
     )
   }
 
+  if (licenseErrors.length === 0 && unknownLicenses.length === 0) {
+    core.summary.addQuote('No license violations detected.').write()
+    return
+  }
+
   if (licenseErrors.length > 0) {
     const rows: SummaryTableRow[] = []
     const manifests = getManifests(licenseErrors)

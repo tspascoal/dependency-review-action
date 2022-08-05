@@ -176,7 +176,7 @@ async function updateCheck(
   body: string,
   failed: boolean
 ): Promise<void> {
-  const res = await octo.rest.checks.create({
+  const res = await octo.rest.checks.update({
     id,
     status: 'completed',
     conclusion: failed ? 'failure' : 'success',

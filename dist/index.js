@@ -252,12 +252,12 @@ function run() {
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
-                core.setFailed('Dependency review detected incompatible licenses.');
+                violationFound(config, 'Dependency review detected incompatible licenses.');
             }
             yield createLicensesCheck(licenseErrors, unknownLicenses, pull_request.head.sha, config.check_name_license || 'Dependency Review Licenses', licenseErrors.length > 0, config);
             printNullLicenses(unknownLicenses);
             if (failed) {
-                core.setFailed('Dependency review detected vulnerable packages.');
+                violationFound(config, 'Dependency review detected vulnerable packages.');
             }
             else {
                 core.info(`Dependency review did not detect any vulnerable packages with severity level "${minSeverity}" or higher.`);
@@ -393,6 +393,14 @@ function printNullLicenses(changes) {
         core.info(`${ansi_styles_1.default.bold.open}${change.manifest} » ${change.name}@${change.version}${ansi_styles_1.default.bold.close}`);
     }
 }
+function violationFound(config, message) {
+    if (config.fail_on_violation) {
+        core.setFailed(message);
+    }
+    else {
+        core.warning(message);
+    }
+}
 run();
 
 
@@ -460,7 +468,8 @@ exports.ConfigurationOptionsSchema = z
     allow_licenses: z.array(z.string()).default([]),
     deny_licenses: z.array(z.string()).default([]),
     check_name_vulnerability: z.string().nullable(),
-    check_name_license: z.string().nullable()
+    check_name_license: z.string().nullable(),
+    fail_on_violation: z.boolean().default(false)
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');
@@ -14159,13 +14168,17 @@ function readConfig() {
         throw new Error("Can't specify both allow_licenses and deny_licenses");
     }
     const check_name_vulnerability = getOptionalInput('check-name-vulnerabilities');
+    const fail_on_violation = z
+        .boolean()
+        .parse(JSON.parse(getOptionalInput('fail-on-violation') || 'false'));
     const check_name_license = getOptionalInput('check-name-licenses');
     return {
         fail_on_severity,
         allow_licenses: allow_licenses === null || allow_licenses === void 0 ? void 0 : allow_licenses.split(',').map(x => x.trim()),
         deny_licenses: deny_licenses === null || deny_licenses === void 0 ? void 0 : deny_licenses.split(',').map(x => x.trim()),
         check_name_vulnerability,
-        check_name_license
+        check_name_license,
+        fail_on_violation
     };
 }
 exports.readConfig = readConfig;
@@ -14269,7 +14282,8 @@ exports.ConfigurationOptionsSchema = z
     allow_licenses: z.array(z.string()).default([]),
     deny_licenses: z.array(z.string()).default([]),
     check_name_vulnerability: z.string().nullable(),
-    check_name_license: z.string().nullable()
+    check_name_license: z.string().nullable(),
+    fail_on_violation: z.boolean().default(false)
 })
     .partial()
     .refine(obj => !(obj.allow_licenses && obj.deny_licenses), 'Your workflow file has both an allow_licenses list and deny_licenses list, but you can only set one or the other.');

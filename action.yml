@@ -22,6 +22,10 @@ inputs:
   check-name-licenses:
     description: The name of the licenses check
     required: false
+  fail-on-violation:
+    description: 'Should the action failf if a dependecy or license violation is found. Disabled by default.'
+    default: 'false'
+    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'

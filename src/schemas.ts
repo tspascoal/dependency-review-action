@@ -36,7 +36,8 @@ export const ConfigurationOptionsSchema = z
     allow_licenses: z.array(z.string()).default([]),
     deny_licenses: z.array(z.string()).default([]),
     check_name_vulnerability: z.string().nullable(),
-    check_name_license: z.string().nullable()
+    check_name_license: z.string().nullable(),
+    fail_on_violation: z.boolean().default(false)
   })
   .partial()
   .refine(

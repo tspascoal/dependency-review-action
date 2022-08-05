@@ -23,6 +23,10 @@ export function readConfig(): ConfigurationOptions {
     'check-name-vulnerabilities'
   )
 
+  const fail_on_violation = z
+    .boolean()
+    .parse(JSON.parse(getOptionalInput('fail-on-violation') || 'false'))
+
   const check_name_license = getOptionalInput('check-name-licenses')
 
   return {
@@ -30,6 +34,7 @@ export function readConfig(): ConfigurationOptions {
     allow_licenses: allow_licenses?.split(',').map(x => x.trim()),
     deny_licenses: deny_licenses?.split(',').map(x => x.trim()),
     check_name_vulnerability,
-    check_name_license
+    check_name_license,
+    fail_on_violation
   }
 }

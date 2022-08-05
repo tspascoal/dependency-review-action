@@ -73,7 +73,10 @@ async function run(): Promise<void> {
 
     if (licenseErrors.length > 0) {
       printLicensesError(licenseErrors)
-      core.setFailed('Dependency review detected incompatible licenses.')
+      violationFound(
+        config,
+        'Dependency review detected incompatible licenses.'
+      )
     }
 
     await createLicensesCheck(
@@ -88,7 +91,7 @@ async function run(): Promise<void> {
     printNullLicenses(unknownLicenses)
 
     if (failed) {
-      core.setFailed('Dependency review detected vulnerable packages.')
+      violationFound(config, 'Dependency review detected vulnerable packages.')
     } else {
       core.info(
         `Dependency review did not detect any vulnerable packages with severity level "${minSeverity}" or higher.`
@@ -292,6 +295,14 @@ function printNullLicenses(changes: Change[]): void {
     core.info(
       `${styles.bold.open}${change.manifest} » ${change.name}@${change.version}${styles.bold.close}`
     )
+  }
+}
+
+function violationFound(config: ConfigurationOptions, message: string): void {
+  if (config.fail_on_violation) {
+    core.setFailed(message)
+  } else {
+    core.warning(message)
   }
 }
 

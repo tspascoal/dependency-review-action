@@ -14171,10 +14171,10 @@ function readConfig() {
         throw new Error("Can't specify both allow_licenses and deny_licenses");
     }
     const check_name_vulnerability = getOptionalInput('check-name-vulnerabilities');
+    const check_name_license = getOptionalInput('check-name-licenses');
     const fail_on_violation = z
         .boolean()
         .parse(JSON.parse(getOptionalInput('fail-on-violation') || 'false'));
-    const check_name_license = getOptionalInput('check-name-licenses');
     return {
         fail_on_severity,
         allow_licenses: allow_licenses === null || allow_licenses === void 0 ? void 0 : allow_licenses.split(',').map(x => x.trim()),

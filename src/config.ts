@@ -23,11 +23,11 @@ export function readConfig(): ConfigurationOptions {
     'check-name-vulnerabilities'
   )
 
+  const check_name_license = getOptionalInput('check-name-licenses')
+
   const fail_on_violation = z
     .boolean()
     .parse(JSON.parse(getOptionalInput('fail-on-violation') || 'false'))
-
-  const check_name_license = getOptionalInput('check-name-licenses')
 
   return {
     fail_on_severity,

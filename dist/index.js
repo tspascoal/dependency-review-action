@@ -394,13 +394,13 @@ function run() {
                 printChangeVulnerabilities(change);
             }
             failed = addedChanges.length > 0;
-            yield checks.createVulnerabilitiesCheck(addedChanges, github.context.sha, failed, minSeverity);
+            yield checks.createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, failed, minSeverity);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
                 violationFound(config, 'Dependency review detected incompatible licenses.');
             }
-            yield checks.createLicensesCheck(licenseErrors, unknownLicenses, github.context.sha, licenseErrors.length > 0, config);
+            yield checks.createLicensesCheck(licenseErrors, unknownLicenses, pull_request.head.sha, licenseErrors.length > 0, config);
             printNullLicenses(unknownLicenses);
             if (failed) {
                 violationFound(config, 'Dependency review detected vulnerable packages.');

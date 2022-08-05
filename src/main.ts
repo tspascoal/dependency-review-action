@@ -62,7 +62,7 @@ async function run(): Promise<void> {
 
     await checks.createVulnerabilitiesCheck(
       addedChanges,
-      github.context.sha,
+      pull_request.head.sha,
       failed,
       minSeverity
     )
@@ -83,7 +83,7 @@ async function run(): Promise<void> {
     await checks.createLicensesCheck(
       licenseErrors,
       unknownLicenses,
-      github.context.sha,
+      pull_request.head.sha,
       licenseErrors.length > 0,
       config
     )

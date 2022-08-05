@@ -9,26 +9,28 @@ const octo = new retryingOctokit(
   githubUtils.getOctokitOptions(core.getInput('repo-token', {required: true}))
 )
 
-let checkIdVulnerability: number
+// let checkIdVulnerability: number
 let checkIdLicense: number
 
 export async function initChecks(
   sha: string,
   config: ConfigurationOptions
 ): Promise<void> {
-  checkIdVulnerability = await createCheck(
-    config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
-    sha
-  )
-  checkIdLicense = await createCheck(
-    config.check_name_vulnerability || 'Dependency Review Licenses',
-    sha
-  )
+  core.debug(`initializing checks for ${sha} ${config.check_name_license}`)
+  // checkIdVulnerability = await createCheck(
+  //   config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
+  //   sha
+  // )
+  // checkIdLicense = await createCheck(
+  //   config.check_name_vulnerability || 'Dependency Review Licenses',
+  //   sha
+  // )
 }
 
 export async function createLicensesCheck(
   licenseErrors: Change[],
   unknownLicensesErrors: Change[],
+  sha: string,
   failed: boolean,
   config: ConfigurationOptions
 ): Promise<void> {
@@ -83,7 +85,14 @@ export async function createLicensesCheck(
     }
   }
 
-  await updateCheck(checkIdLicense, 'Dependency Review', body, failed)
+  await updateCheck(
+    checkIdLicense,
+    'Dependency Review License',
+    sha,
+    'Dependency Review',
+    body,
+    failed
+  )
 }
 
 export async function createVulnerabilitiesCheck(
@@ -134,8 +143,9 @@ export async function createVulnerabilitiesCheck(
       }
     }
   }
+  core.debug(`body: ${body}`) // TODO: delete
 
-  await updateCheck(checkIdVulnerability, 'Dependency Review', body, failed)
+  // await updateCheck(checkIdVulnerability, 'Dependency Review', body, failed)
 }
 
 function renderUrl(url: string | null, text: string): string {
@@ -150,37 +160,38 @@ function getManifests(changes: Changes): Set<string> {
   return new Set(changes.flatMap(c => c.manifest))
 }
 
-async function createCheck(checkName: string, sha: string): Promise<number> {
-  core.debug(`creating check ${checkName} in progress for ${sha}`)
-  const res = await octo.rest.checks.create({
-    name: checkName,
-    head_sha: sha,
-    status: 'in_progress',
-    output: {
-      title: 'Dependency Review',
-      summary: 'Dependency Review is running'
-    },
-    ...github.context.repo
-  })
+// async function createCheck(checkName: string, sha: string): Promise<number> {
+//   core.debug(`creating check ${checkName} in progress for ${sha}`)
+//   const res = await octo.rest.checks.create({
+//     name: checkName,
+//     head_sha: sha,
+//     status: 'in_progress',
+//     output: {
+//       title: 'Dependency Review',
+//       summary: 'Dependency Review is running'
+//     },
+//     ...github.context.repo
+//   })
 
-  core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
+//   core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
 
-  return res.data.id
-}
+//   return res.data.id
+// }
 
 async function updateCheck(
   id: number,
+  checkName: string,
+  sha: string,
   title: string,
   body: string,
   failed: boolean
 ): Promise<void> {
   core.debug(`updating check: ${id}`)
 
-  return
-
   const res = await octo.rest.checks.update({
-    check_run_id: id,
-    status: 'completed',
+    name: checkName,
+    head_sha: sha,
+    // check_run_id: id,
     conclusion: failed ? 'failure' : 'success',
     output: {
       title,

@@ -1,7 +1,7 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 7657:
+/***/ 2321:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -46,16 +46,23 @@ const githubUtils = __importStar(__nccwpck_require__(3030));
 const retry = __importStar(__nccwpck_require__(6298));
 const retryingOctokit = githubUtils.GitHub.plugin(retry.retry);
 const octo = new retryingOctokit(githubUtils.getOctokitOptions(core.getInput('repo-token', { required: true })));
-let checkIdVulnerability;
+// let checkIdVulnerability: number
 let checkIdLicense;
 function initChecks(sha, config) {
     return __awaiter(this, void 0, void 0, function* () {
-        checkIdVulnerability = yield createCheck(config.check_name_vulnerability || 'Dependency Review Vulnerabilities', sha);
-        checkIdLicense = yield createCheck(config.check_name_vulnerability || 'Dependency Review Licenses', sha);
+        core.debug(`initializing checks for ${sha} ${config.check_name_license}`);
+        // checkIdVulnerability = await createCheck(
+        //   config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
+        //   sha
+        // )
+        // checkIdLicense = await createCheck(
+        //   config.check_name_vulnerability || 'Dependency Review Licenses',
+        //   sha
+        // )
     });
 }
 exports.initChecks = initChecks;
-function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, config) {
+function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, failed, config) {
     return __awaiter(this, void 0, void 0, function* () {
         let body = '';
         if (licenseErrors.length > 0) {
@@ -87,7 +94,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, confi
                 }
             }
         }
-        yield updateCheck(checkIdLicense, 'Dependency Review', body, failed);
+        yield updateCheck(checkIdLicense, 'Dependency Review License', sha, 'Dependency Review', body, failed);
     });
 }
 exports.createLicensesCheck = createLicensesCheck;
@@ -122,7 +129,8 @@ function createVulnerabilitiesCheck(addedPackages, failed, severity) {
                 }
             }
         }
-        yield updateCheck(checkIdVulnerability, 'Dependency Review', body, failed);
+        core.debug(`body: ${body}`); // TODO: delete
+        // await updateCheck(checkIdVulnerability, 'Dependency Review', body, failed)
     });
 }
 exports.createVulnerabilitiesCheck = createVulnerabilitiesCheck;
@@ -137,21 +145,27 @@ function renderUrl(url, text) {
 function getManifests(changes) {
     return new Set(changes.flatMap(c => c.manifest));
 }
-function createCheck(checkName, sha) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`creating check ${checkName} in progress for ${sha}`);
-        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress', output: {
-                title: 'Dependency Review',
-                summary: 'Dependency Review is running'
-            } }, github.context.repo));
-        core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
-        return res.data.id;
-    });
-}
-function updateCheck(id, title, body, failed) {
+// async function createCheck(checkName: string, sha: string): Promise<number> {
+//   core.debug(`creating check ${checkName} in progress for ${sha}`)
+//   const res = await octo.rest.checks.create({
+//     name: checkName,
+//     head_sha: sha,
+//     status: 'in_progress',
+//     output: {
+//       title: 'Dependency Review',
+//       summary: 'Dependency Review is running'
+//     },
+//     ...github.context.repo
+//   })
+//   core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
+//   return res.data.id
+// }
+function updateCheck(id, checkName, sha, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`updating check: ${id}`);
-        const res = yield octo.rest.checks.update(Object.assign({ check_run_id: id, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
+        const res = yield octo.rest.checks.update(Object.assign({ name: checkName, head_sha: sha, 
+            // check_run_id: id,
+            conclusion: failed ? 'failure' : 'success', output: {
                 title,
                 summary: body
             } }, github.context.repo));
@@ -315,7 +329,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const dependencyGraph = __importStar(__nccwpck_require__(4966));
-const checks = __importStar(__nccwpck_require__(7657));
+const checks = __importStar(__nccwpck_require__(2321));
 const github = __importStar(__nccwpck_require__(5438));
 const ansi_styles_1 = __importDefault(__nccwpck_require__(6844));
 const request_error_1 = __nccwpck_require__(537);
@@ -357,7 +371,7 @@ function run() {
                 printLicensesError(licenseErrors);
                 violationFound(config, 'Dependency review detected incompatible licenses.');
             }
-            yield checks.createLicensesCheck(licenseErrors, unknownLicenses, licenseErrors.length > 0, config);
+            yield checks.createLicensesCheck(licenseErrors, unknownLicenses, github.context.sha, licenseErrors.length > 0, config);
             printNullLicenses(unknownLicenses);
             if (failed) {
                 violationFound(config, 'Dependency review detected vulnerable packages.');

@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as dependencyGraph from './dependency-graph'
-import * as checks from './check'
+import * as checks from './checks'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
@@ -78,6 +78,7 @@ async function run(): Promise<void> {
     await checks.createLicensesCheck(
       licenseErrors,
       unknownLicenses,
+      github.context.sha,
       licenseErrors.length > 0,
       config
     )

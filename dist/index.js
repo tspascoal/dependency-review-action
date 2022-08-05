@@ -295,7 +295,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
             }
             body += `\n## Incompatible Licenses`;
             for (const manifest of manifests) {
-                body += `\n ### Manifest _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`;
+                body += `\n ### _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`;
                 for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
                     body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
                 }
@@ -319,15 +319,16 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkNam
 function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
-        let body = severity
-            ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
-            : '';
+        let body = `## Dependency Review\nWe found ${manifests.entries.length} vulnerabilities`;
         core.debug(`found ${manifests.entries.length} manifests`);
         if (addedPackages.length > 0) {
-            body += `\n## Added known Vulnerabilities`;
+            body += `\n## Vulnerabilities`;
+            body += severity
+                ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+                : '';
         }
         for (const manifest of manifests) {
-            body += `\n### Manifes _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
+            body += `\n### _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
             for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
                 let previous_package = '';
                 let previous_version = '';

@@ -141,7 +141,7 @@ async function createLicensesCheck(
     body += `\n## Incompatible Licenses`
 
     for (const manifest of manifests) {
-      body += `\n ### Manifest _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`
+      body += `\n ### _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`
 
       for (const change of licenseErrors.filter(
         pkg => pkg.manifest === manifest
@@ -189,18 +189,19 @@ async function createVulnerabilitiesCheck(
 ): Promise<void> {
   const manifests = getManifests(addedPackages)
 
-  let body = severity
-    ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
-    : ''
+  let body = `## Dependency Review\nWe found ${manifests.entries.length} vulnerabilities`
 
   core.debug(`found ${manifests.entries.length} manifests`)
 
   if (addedPackages.length > 0) {
-    body += `\n## Added known Vulnerabilities`
+    body += `\n## Vulnerabilities`
+    body += severity
+      ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+      : ''
   }
 
   for (const manifest of manifests) {
-    body += `\n### Manifes _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
+    body += `\n### _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
 
     for (const change of addedPackages.filter(
       pkg => pkg.manifest === manifest

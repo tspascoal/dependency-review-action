@@ -78,14 +78,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, failed, 
                 }
             }
         }
-        core.debug(body); // TODO: Delete
-        throw new Error('caboom');
-        // await createCheck(
-        //   config.check_name_vulnerability || 'Dependency Review Licenses',
-        //   sha,
-        //   body,
-        //   failed
-        // )
+        yield createCheck(config.check_name_vulnerability || 'Dependency Review Licenses', sha, body, failed);
     });
 }
 exports.createLicensesCheck = createLicensesCheck;

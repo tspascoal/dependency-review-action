@@ -67,14 +67,12 @@ export async function createLicensesCheck(
     }
   }
 
-  core.debug(body) // TODO: Delete
-  throw new Error('caboom')
-  // await createCheck(
-  //   config.check_name_vulnerability || 'Dependency Review Licenses',
-  //   sha,
-  //   body,
-  //   failed
-  // )
+  await createCheck(
+    config.check_name_vulnerability || 'Dependency Review Licenses',
+    sha,
+    body,
+    failed
+  )
 }
 
 export async function createVulnerabilitiesCheck(

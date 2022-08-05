@@ -152,7 +152,7 @@ function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`updating check: ${id}`);
         const res = yield octo.rest.checks.update({
-            id,
+            check_run_id: id,
             status: 'completed',
             conclusion: failed ? 'failure' : 'success',
             output: {

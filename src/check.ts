@@ -179,7 +179,7 @@ async function updateCheck(
   core.debug(`updating check: ${id}`)
 
   const res = await octo.rest.checks.update({
-    id,
+    check_run_id: id,
     status: 'completed',
     conclusion: failed ? 'failure' : 'success',
     output: {

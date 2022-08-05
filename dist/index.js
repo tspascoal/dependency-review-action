@@ -99,7 +99,7 @@ function createVulnerabilitiesCheck(addedPackages, failed, severity) {
         if (addedPackages.length > 0) {
             body += `\n## Vulnerabilities`;
             body += severity
-                ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+                ? `\n> Vulnerabilities where filtered by **${severity}** severity.\n`
                 : '';
         }
         for (const manifest of manifests) {

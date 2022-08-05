@@ -102,7 +102,7 @@ export async function createVulnerabilitiesCheck(
   if (addedPackages.length > 0) {
     body += `\n## Vulnerabilities`
     body += severity
-      ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+      ? `\n> Vulnerabilities where filtered by **${severity}** severity.\n`
       : ''
   }
 

@@ -37,7 +37,7 @@ export async function createLicensesCheck(
   if (licenseErrors.length > 0) {
     const manifests = getManifests(licenseErrors)
 
-    core.debug(`found ${manifests.entries.length} manifests for licenses`)
+    core.debug(`found ${manifests.size} manifests for licenses`)
 
     if (config.allow_licenses && config.allow_licenses.length > 0) {
       body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
@@ -66,9 +66,7 @@ export async function createLicensesCheck(
   if (unknownLicensesErrors.length > 0) {
     const manifests = getManifests(unknownLicensesErrors)
 
-    core.debug(
-      `found ${manifests.entries.length} manifests for unknown licenses`
-    )
+    core.debug(`found ${manifests.size} manifests for unknown licenses`)
 
     body += `\n## Unknown Licenses\n`
 
@@ -97,7 +95,7 @@ export async function createVulnerabilitiesCheck(
 
   let body = `## Dependency Review\nWe found ${addedPackages.length} vulnerabilities`
 
-  core.debug(`found ${manifests.entries.length} manifests`)
+  core.debug(`found ${manifests.size} manifests`)
 
   if (addedPackages.length > 0) {
     body += `\n## Vulnerabilities`
@@ -179,7 +177,7 @@ async function updateCheck(
   core.debug(`updating check: ${id}`)
 
   const res = await octo.rest.checks.update({
-    id,
+    check_run_id: id,
     status: 'completed',
     conclusion: failed ? 'failure' : 'success',
     output: {

@@ -60,7 +60,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, confi
         let body = '';
         if (licenseErrors.length > 0) {
             const manifests = getManifests(licenseErrors);
-            core.debug(`found ${manifests.entries.length} manifests for licenses`);
+            core.debug(`found ${manifests.size} manifests for licenses`);
             if (config.allow_licenses && config.allow_licenses.length > 0) {
                 body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`;
             }
@@ -78,7 +78,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, confi
         core.info(`found ${unknownLicensesErrors.length} unknown licenses`);
         if (unknownLicensesErrors.length > 0) {
             const manifests = getManifests(unknownLicensesErrors);
-            core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
+            core.debug(`found ${manifests.size} manifests for unknown licenses`);
             body += `\n## Unknown Licenses\n`;
             for (const manifest of manifests) {
                 body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`;
@@ -95,7 +95,7 @@ function createVulnerabilitiesCheck(addedPackages, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
         let body = `## Dependency Review\nWe found ${addedPackages.length} vulnerabilities`;
-        core.debug(`found ${manifests.entries.length} manifests`);
+        core.debug(`found ${manifests.size} manifests`);
         if (addedPackages.length > 0) {
             body += `\n## Vulnerabilities`;
             body += severity
@@ -151,7 +151,7 @@ function createCheck(checkName, sha) {
 function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`updating check: ${id}`);
-        const res = yield octo.rest.checks.update(Object.assign({ id, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
+        const res = yield octo.rest.checks.update(Object.assign({ check_run_id: id, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
                 title,
                 summary: body
             } }, github.context.repo));

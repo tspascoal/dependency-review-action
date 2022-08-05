@@ -151,7 +151,6 @@ function createCheck(checkName, sha) {
 function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`updating check: ${id}`);
-        yield octo.rest.checks.update({});
         const res = yield octo.rest.checks.update(Object.assign({ id, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
                 title,
                 summary: body

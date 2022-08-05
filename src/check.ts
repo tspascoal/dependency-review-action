@@ -178,8 +178,6 @@ async function updateCheck(
 ): Promise<void> {
   core.debug(`updating check: ${id}`)
 
-  await octo.rest.checks.update({})
-
   const res = await octo.rest.checks.update({
     id,
     status: 'completed',

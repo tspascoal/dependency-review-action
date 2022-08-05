@@ -29,6 +29,8 @@ async function run(): Promise<void> {
 
     await checks.initChecks(pull_request.head.sha, config)
 
+    await new Promise(f => setTimeout(f, 30000))
+
     const changes = await dependencyGraph.compare({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,

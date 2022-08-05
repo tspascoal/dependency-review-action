@@ -23,12 +23,11 @@ async function run(): Promise<void> {
     }
 
     const config = readConfig()
-
-    await checks.initChecks(github.context.sha, config)
-
     const pull_request = PullRequestSchema.parse(
       github.context.payload.pull_request
     )
+
+    await checks.initChecks(pull_request.head.sha, config)
 
     const changes = await dependencyGraph.compare({
       owner: github.context.repo.owner,
@@ -60,12 +59,7 @@ async function run(): Promise<void> {
     }
     failed = addedChanges.length > 0
 
-    await checks.createVulnerabilitiesCheck(
-      addedChanges,
-      pull_request.head.sha,
-      failed,
-      minSeverity
-    )
+    await checks.createVulnerabilitiesCheck(addedChanges, failed, minSeverity)
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
       changes,
@@ -83,7 +77,6 @@ async function run(): Promise<void> {
     await checks.createLicensesCheck(
       licenseErrors,
       unknownLicenses,
-      pull_request.head.sha,
       licenseErrors.length > 0,
       config
     )

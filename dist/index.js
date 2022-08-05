@@ -94,7 +94,7 @@ exports.createLicensesCheck = createLicensesCheck;
 function createVulnerabilitiesCheck(addedPackages, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
-        let body = `## Dependency Review\nWe found ${addedPackages.length} vulnerabilities`;
+        let body = `We found ${addedPackages.length} vulnerabilities`;
         core.debug(`found ${manifests.size} manifests`);
         if (addedPackages.length > 0) {
             body += `\n## Vulnerabilities`;

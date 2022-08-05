@@ -151,15 +151,11 @@ function createCheck(checkName, sha) {
 function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`updating check: ${id}`);
-        const res = yield octo.rest.checks.update({
-            check_run_id: id,
-            status: 'completed',
-            conclusion: failed ? 'failure' : 'success',
-            output: {
+        yield octo.rest.checks.update({});
+        const res = yield octo.rest.checks.update(Object.assign({ id, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
                 title,
                 summary: body
-            }
-        });
+            } }, github.context.repo));
         core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
     });
 }

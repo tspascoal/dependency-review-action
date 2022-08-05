@@ -178,14 +178,17 @@ async function updateCheck(
 ): Promise<void> {
   core.debug(`updating check: ${id}`)
 
+  await octo.rest.checks.update({})
+
   const res = await octo.rest.checks.update({
-    check_run_id: id,
+    id,
     status: 'completed',
     conclusion: failed ? 'failure' : 'success',
     output: {
       title,
       summary: body
-    }
+    },
+    ...github.context.repo
   })
 
   core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)

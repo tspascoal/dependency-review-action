@@ -60,7 +60,12 @@ async function run(): Promise<void> {
     }
     failed = addedChanges.length > 0
 
-    await checks.createVulnerabilitiesCheck(addedChanges, failed, minSeverity)
+    await checks.createVulnerabilitiesCheck(
+      addedChanges,
+      github.context.sha,
+      failed,
+      minSeverity
+    )
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
       changes,

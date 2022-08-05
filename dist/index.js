@@ -47,7 +47,7 @@ const retry = __importStar(__nccwpck_require__(6298));
 const retryingOctokit = githubUtils.GitHub.plugin(retry.retry);
 const octo = new retryingOctokit(githubUtils.getOctokitOptions(core.getInput('repo-token', { required: true })));
 // let checkIdVulnerability: number
-let checkIdLicense;
+// let checkIdLicense: number
 function initChecks(sha, config) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`initializing checks for ${sha} ${config.check_name_license}`);
@@ -94,11 +94,19 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, failed, 
                 }
             }
         }
-        yield updateCheck(checkIdLicense, 'Dependency Review License', sha, 'Dependency Review', body, failed);
+        yield addCheck(body, config.check_name_license || 'Dependency Review Licenses', sha, failed);
+        // await updateCheck(
+        //   checkIdLicense,
+        //   'Dependency Review License',
+        //   sha,
+        //   'Dependency Review',
+        //   body,
+        //   failed
+        // )
     });
 }
 exports.createLicensesCheck = createLicensesCheck;
-function createVulnerabilitiesCheck(addedPackages, failed, severity) {
+function createVulnerabilitiesCheck(addedPackages, sha, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
         let body = `## Dependency Review\nWe found ${addedPackages.length} vulnerabilities`;
@@ -129,7 +137,7 @@ function createVulnerabilitiesCheck(addedPackages, failed, severity) {
                 }
             }
         }
-        core.debug(`body: ${body}`); // TODO: delete
+        yield addCheck(body, 'Dependency Review Vulnerabilities', sha, failed);
         // await updateCheck(checkIdVulnerability, 'Dependency Review', body, failed)
     });
 }
@@ -160,16 +168,37 @@ function getManifests(changes) {
 //   core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
 //   return res.data.id
 // }
-function updateCheck(id, checkName, sha, title, body, failed) {
+// async function updateCheck(
+//   id: number,
+//   checkName: string,
+//   sha: string,
+//   title: string,
+//   body: string,
+//   failed: boolean
+// ): Promise<void> {
+//   core.debug(`updating check: ${id}`)
+//   const res = await octo.rest.checks.update({
+//     name: checkName,
+//     head_sha: sha,
+//     // check_run_id: id,
+//     conclusion: failed ? 'failure' : 'success',
+//     output: {
+//       title,
+//       summary: body
+//     },
+//     ...github.context.repo
+//   })
+//   core.debug(
+//     `updated check with id: ${res.data.id} url: ${res.data.url} sha: ${res.data.head_sha}`
+//   )
+// }
+function addCheck(body, checkName, sha, failed) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`updating check: ${id}`);
-        const res = yield octo.rest.checks.update(Object.assign({ name: checkName, head_sha: sha, 
-            // check_run_id: id,
-            conclusion: failed ? 'failure' : 'success', output: {
-                title,
+        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
+                title: checkName,
                 summary: body
             } }, github.context.repo));
-        core.debug(`updated check with id: ${res.data.id} url: ${res.data.url} sha: ${res.data.head_sha}`);
+        core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
     });
 }
 
@@ -365,7 +394,7 @@ function run() {
                 printChangeVulnerabilities(change);
             }
             failed = addedChanges.length > 0;
-            yield checks.createVulnerabilitiesCheck(addedChanges, failed, minSeverity);
+            yield checks.createVulnerabilitiesCheck(addedChanges, github.context.sha, failed, minSeverity);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);

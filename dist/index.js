@@ -39,23 +39,127 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.addCheck = void 0;
+exports.createVulnerabilitiesCheck = exports.createLicensesCheck = exports.initChecks = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const githubUtils = __importStar(__nccwpck_require__(3030));
 const retry = __importStar(__nccwpck_require__(6298));
 const retryingOctokit = githubUtils.GitHub.plugin(retry.retry);
 const octo = new retryingOctokit(githubUtils.getOctokitOptions(core.getInput('repo-token', { required: true })));
-function addCheck(body, checkName, sha, failed) {
+let checkIdVulnerability;
+let checkIdLicense;
+function initChecks(sha, config) {
     return __awaiter(this, void 0, void 0, function* () {
-        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'completed', conclusion: failed ? 'failure' : 'success', output: {
-                title: checkName,
-                summary: body
+        checkIdVulnerability = yield createCheck(config.check_name_vulnerability || 'Dependency Review Vulnerabilities', sha);
+        checkIdLicense = yield createCheck(config.check_name_vulnerability || 'Dependency Review Licenses', sha);
+    });
+}
+exports.initChecks = initChecks;
+function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, config) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let body = '';
+        if (licenseErrors.length > 0) {
+            const manifests = getManifests(licenseErrors);
+            core.debug(`found ${manifests.entries.length} manifests for licenses`);
+            if (config.allow_licenses && config.allow_licenses.length > 0) {
+                body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`;
+            }
+            if (config.deny_licenses && config.deny_licenses.length > 0) {
+                body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`;
+            }
+            body += `\n## Incompatible Licenses`;
+            for (const manifest of manifests) {
+                body += `\n ### _${manifest}_\n|Package|Version|License|\n|---|---:|---|`;
+                for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
+                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
+                }
+            }
+        }
+        core.info(`found ${unknownLicensesErrors.length} unknown licenses`);
+        if (unknownLicensesErrors.length > 0) {
+            const manifests = getManifests(unknownLicensesErrors);
+            core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
+            body += `\n## Unknown Licenses\n`;
+            for (const manifest of manifests) {
+                body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`;
+                for (const change of unknownLicensesErrors.filter(pkg => pkg.manifest === manifest)) {
+                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
+                }
+            }
+        }
+        yield updateCheck(checkIdLicense, body, failed); //TODO: pass id
+    });
+}
+exports.createLicensesCheck = createLicensesCheck;
+function createVulnerabilitiesCheck(addedPackages, failed, severity) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const manifests = getManifests(addedPackages);
+        let body = `## Dependency Review\nWe found ${addedPackages.length} vulnerabilities`;
+        core.debug(`found ${manifests.entries.length} manifests`);
+        if (addedPackages.length > 0) {
+            body += `\n## Vulnerabilities`;
+            body += severity
+                ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
+                : '';
+        }
+        for (const manifest of manifests) {
+            body += `\n### _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
+            for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
+                let previous_package = '';
+                let previous_version = '';
+                for (const vuln of change.vulnerabilities) {
+                    const sameAsPrevious = previous_package === change.name &&
+                        previous_version === change.version;
+                    if (!sameAsPrevious) {
+                        body += `\n| ${renderUrl(change.source_repository_url, change.name)} | ${change.version}|`;
+                    }
+                    else {
+                        body += '\n|||';
+                    }
+                    body += `${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${vuln.severity} |`;
+                    previous_package = change.name;
+                    previous_version = change.version;
+                }
+            }
+        }
+        yield updateCheck(checkIdVulnerability, body, failed);
+    });
+}
+exports.createVulnerabilitiesCheck = createVulnerabilitiesCheck;
+function renderUrl(url, text) {
+    if (url) {
+        return `[${text}](${url})`;
+    }
+    else {
+        return text;
+    }
+}
+function getManifests(changes) {
+    return new Set(changes.flatMap(c => c.manifest));
+}
+function createCheck(checkName, sha) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress', output: {
+                title: checkName
             } }, github.context.repo));
+        core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
+        return res.data.id;
+    });
+}
+function updateCheck(id, body, failed) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const res = yield octo.rest.checks.create({
+            id,
+            status: 'completed',
+            conclusion: failed ? 'failure' : 'success',
+            output: {
+                // title: checkName, TODO do we need this?
+                summary: body
+            }
+        });
         core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
     });
 }
-exports.addCheck = addCheck;
 
 
 /***/ }),
@@ -227,6 +331,8 @@ function run() {
             if (github.context.eventName !== 'pull_request') {
                 throw new Error(`This run was triggered by the "${github.context.eventName}" event, which is unsupported. Please ensure you are using the "pull_request" event for this workflow.`);
             }
+            const config = (0, config_1.readConfig)();
+            checks.initChecks(github.context.sha, config);
             const pull_request = schemas_1.PullRequestSchema.parse(github.context.payload.pull_request);
             const changes = yield dependencyGraph.compare({
                 owner: github.context.repo.owner,
@@ -234,7 +340,6 @@ function run() {
                 baseRef: pull_request.base.sha,
                 headRef: pull_request.head.sha
             });
-            const config = (0, config_1.readConfig)();
             const minSeverity = config.fail_on_severity;
             let failed = false;
             const licenses = {
@@ -248,13 +353,13 @@ function run() {
                 printChangeVulnerabilities(change);
             }
             failed = addedChanges.length > 0;
-            yield createVulnerabilitiesCheck(addedChanges, pull_request.head.sha, config.check_name_vulnerability || 'Dependency Review Vulnerabilities', failed, minSeverity);
+            yield checks.createVulnerabilitiesCheck(addedChanges, failed, minSeverity);
             const [licenseErrors, unknownLicenses] = (0, licenses_1.getDeniedLicenseChanges)(changes, licenses);
             if (licenseErrors.length > 0) {
                 printLicensesError(licenseErrors);
                 violationFound(config, 'Dependency review detected incompatible licenses.');
             }
-            yield createLicensesCheck(licenseErrors, unknownLicenses, pull_request.head.sha, config.check_name_license || 'Dependency Review Licenses', licenseErrors.length > 0, config);
+            yield checks.createLicensesCheck(licenseErrors, unknownLicenses, licenseErrors.length > 0, config);
             printNullLicenses(unknownLicenses);
             if (failed) {
                 violationFound(config, 'Dependency review detected vulnerable packages.');
@@ -281,90 +386,10 @@ function run() {
         }
     });
 }
-function createLicensesCheck(licenseErrors, unknownLicensesErrors, sha, checkName, failed, config) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let body = '';
-        if (licenseErrors.length > 0) {
-            const manifests = getManifests(licenseErrors);
-            core.debug(`found ${manifests.entries.length} manifests for licenses`);
-            if (config.allow_licenses && config.allow_licenses.length > 0) {
-                body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`;
-            }
-            if (config.deny_licenses && config.deny_licenses.length > 0) {
-                body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`;
-            }
-            body += `\n## Incompatible Licenses`;
-            for (const manifest of manifests) {
-                body += `\n ### _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`;
-                for (const change of licenseErrors.filter(pkg => pkg.manifest === manifest)) {
-                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
-                }
-            }
-        }
-        core.info(`found ${unknownLicensesErrors.length} unknown licenses`);
-        if (unknownLicensesErrors.length > 0) {
-            const manifests = getManifests(unknownLicensesErrors);
-            core.debug(`found ${manifests.entries.length} manifests for unknown licenses`);
-            body += `\n## Unknown Licenses\n`;
-            for (const manifest of manifests) {
-                body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`;
-                for (const change of unknownLicensesErrors.filter(pkg => pkg.manifest === manifest)) {
-                    body += `\n|${renderUrl(change.source_repository_url, change.name)}|${change.version}|${change.license}|`;
-                }
-            }
-        }
-        yield checks.addCheck(body, checkName, sha, failed);
-    });
-}
-function createVulnerabilitiesCheck(addedPackages, sha, checkName, failed, severity) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const manifests = getManifests(addedPackages);
-        let body = `## Dependency Review\nWe found ${manifests.entries.length} vulnerabilities`;
-        core.debug(`found ${manifests.entries.length} manifests`);
-        if (addedPackages.length > 0) {
-            body += `\n## Vulnerabilities`;
-            body += severity
-                ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
-                : '';
-        }
-        for (const manifest of manifests) {
-            body += `\n### _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`;
-            for (const change of addedPackages.filter(pkg => pkg.manifest === manifest)) {
-                let previous_package = '';
-                let previous_version = '';
-                for (const vuln of change.vulnerabilities) {
-                    const sameAsPrevious = previous_package === change.name &&
-                        previous_version === change.version;
-                    if (!sameAsPrevious) {
-                        body += `\n| ${renderUrl(change.source_repository_url, change.name)} | ${change.version}|`;
-                    }
-                    else {
-                        body += '\n|||';
-                    }
-                    body += `${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${vuln.severity} |`;
-                    previous_package = change.name;
-                    previous_version = change.version;
-                }
-            }
-        }
-        yield checks.addCheck(body, checkName, sha, failed);
-    });
-}
-function getManifests(changes) {
-    return new Set(changes.flatMap(c => c.manifest));
-}
 function printChangeVulnerabilities(change) {
     for (const vuln of change.vulnerabilities) {
         core.info(`${ansi_styles_1.default.bold.open}${change.manifest} » ${change.name}@${change.version}${ansi_styles_1.default.bold.close} – ${vuln.advisory_summary} ${renderSeverity(vuln.severity)}`);
         core.info(`  ↪ ${vuln.advisory_url}`);
-    }
-}
-function renderUrl(url, text) {
-    if (url) {
-        return `[${text}](${url})`;
-    }
-    else {
-        return text;
     }
 }
 function renderSeverity(severity) {

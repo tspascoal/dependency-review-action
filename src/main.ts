@@ -6,7 +6,6 @@ import styles from 'ansi-styles'
 import {RequestError} from '@octokit/request-error'
 import {
   Change,
-  Changes,
   ConfigurationOptions,
   PullRequestSchema,
   Severity
@@ -23,6 +22,10 @@ async function run(): Promise<void> {
       )
     }
 
+    const config = readConfig()
+
+    checks.initChecks(github.context.sha, config)
+
     const pull_request = PullRequestSchema.parse(
       github.context.payload.pull_request
     )
@@ -34,7 +37,6 @@ async function run(): Promise<void> {
       headRef: pull_request.head.sha
     })
 
-    const config = readConfig()
     const minSeverity = config.fail_on_severity
     let failed = false
 
@@ -58,13 +60,7 @@ async function run(): Promise<void> {
     }
     failed = addedChanges.length > 0
 
-    await createVulnerabilitiesCheck(
-      addedChanges,
-      pull_request.head.sha,
-      config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
-      failed,
-      minSeverity
-    )
+    await checks.createVulnerabilitiesCheck(addedChanges, failed, minSeverity)
 
     const [licenseErrors, unknownLicenses] = getDeniedLicenseChanges(
       changes,
@@ -79,11 +75,9 @@ async function run(): Promise<void> {
       )
     }
 
-    await createLicensesCheck(
+    await checks.createLicensesCheck(
       licenseErrors,
       unknownLicenses,
-      pull_request.head.sha,
-      config.check_name_license || 'Dependency Review Licenses',
       licenseErrors.length > 0,
       config
     )
@@ -116,128 +110,6 @@ async function run(): Promise<void> {
   }
 }
 
-async function createLicensesCheck(
-  licenseErrors: Change[],
-  unknownLicensesErrors: Change[],
-  sha: string,
-  checkName: string,
-  failed: boolean,
-  config: ConfigurationOptions
-): Promise<void> {
-  let body = ''
-
-  if (licenseErrors.length > 0) {
-    const manifests = getManifests(licenseErrors)
-
-    core.debug(`found ${manifests.entries.length} manifests for licenses`)
-
-    if (config.allow_licenses && config.allow_licenses.length > 0) {
-      body += `\n> **Allowed Licenses**: ${config.allow_licenses.join(', ')}\n`
-    }
-    if (config.deny_licenses && config.deny_licenses.length > 0) {
-      body += `\n> **Denied Licenses**: ${config.deny_licenses.join(', ')}\n`
-    }
-
-    body += `\n## Incompatible Licenses`
-
-    for (const manifest of manifests) {
-      body += `\n ### _${manifest}_:\n|Package|Version|License|\n|---|---:|---|`
-
-      for (const change of licenseErrors.filter(
-        pkg => pkg.manifest === manifest
-      )) {
-        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
-          change.version
-        }|${change.license}|`
-      }
-    }
-  }
-
-  core.info(`found ${unknownLicensesErrors.length} unknown licenses`)
-
-  if (unknownLicensesErrors.length > 0) {
-    const manifests = getManifests(unknownLicensesErrors)
-
-    core.debug(
-      `found ${manifests.entries.length} manifests for unknown licenses`
-    )
-
-    body += `\n## Unknown Licenses\n`
-
-    for (const manifest of manifests) {
-      body += `\n ### Manifest _${manifest}_:\n|Package|Version|\n|---|---:|`
-
-      for (const change of unknownLicensesErrors.filter(
-        pkg => pkg.manifest === manifest
-      )) {
-        body += `\n|${renderUrl(change.source_repository_url, change.name)}|${
-          change.version
-        }|${change.license}|`
-      }
-    }
-  }
-
-  await checks.addCheck(body, checkName, sha, failed)
-}
-
-async function createVulnerabilitiesCheck(
-  addedPackages: Changes,
-  sha: string,
-  checkName: string,
-  failed: boolean,
-  severity: string | undefined
-): Promise<void> {
-  const manifests = getManifests(addedPackages)
-
-  let body = `## Dependency Review\nWe found ${manifests.entries.length} vulnerabilities`
-
-  core.debug(`found ${manifests.entries.length} manifests`)
-
-  if (addedPackages.length > 0) {
-    body += `\n## Vulnerabilities`
-    body += severity
-      ? `> Vulnerabilities where filtered by **${severity}** severity.\n`
-      : ''
-  }
-
-  for (const manifest of manifests) {
-    body += `\n### _${manifest}_\n|Package|Version|Vulnerability|Severity|\n|---|---:|---|---|`
-
-    for (const change of addedPackages.filter(
-      pkg => pkg.manifest === manifest
-    )) {
-      let previous_package = ''
-      let previous_version = ''
-      for (const vuln of change.vulnerabilities) {
-        const sameAsPrevious =
-          previous_package === change.name &&
-          previous_version === change.version
-
-        if (!sameAsPrevious) {
-          body += `\n| ${renderUrl(
-            change.source_repository_url,
-            change.name
-          )} | ${change.version}|`
-        } else {
-          body += '\n|||'
-        }
-        body += `${renderUrl(vuln.advisory_url, vuln.advisory_summary)} | ${
-          vuln.severity
-        } |`
-
-        previous_package = change.name
-        previous_version = change.version
-      }
-    }
-  }
-
-  await checks.addCheck(body, checkName, sha, failed)
-}
-
-function getManifests(changes: Changes): Set<string> {
-  return new Set(changes.flatMap(c => c.manifest))
-}
-
 function printChangeVulnerabilities(change: Change): void {
   for (const vuln of change.vulnerabilities) {
     core.info(
@@ -248,14 +120,6 @@ function printChangeVulnerabilities(change: Change): void {
       )}`
     )
     core.info(`  ↪ ${vuln.advisory_url}`)
-  }
-}
-
-function renderUrl(url: string | null, text: string): string {
-  if (url) {
-    return `[${text}](${url})`
-  } else {
-    return text
   }
 }
 

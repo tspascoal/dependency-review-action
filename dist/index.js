@@ -87,7 +87,7 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, confi
                 }
             }
         }
-        yield updateCheck(checkIdLicense, body, failed); //TODO: pass id
+        yield updateCheck(checkIdLicense, 'Dependency Review', body, failed);
     });
 }
 exports.createLicensesCheck = createLicensesCheck;
@@ -122,7 +122,7 @@ function createVulnerabilitiesCheck(addedPackages, failed, severity) {
                 }
             }
         }
-        yield updateCheck(checkIdVulnerability, body, failed);
+        yield updateCheck(checkIdVulnerability, 'Dependency Review', body, failed);
     });
 }
 exports.createVulnerabilitiesCheck = createVulnerabilitiesCheck;
@@ -139,22 +139,20 @@ function getManifests(changes) {
 }
 function createCheck(checkName, sha) {
     return __awaiter(this, void 0, void 0, function* () {
-        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress', output: {
-                title: checkName,
-                summary: ''
-            } }, github.context.repo));
+        core.debug(`creating check ${checkName} in progress`);
+        const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress' }, github.context.repo));
         core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
         return res.data.id;
     });
 }
-function updateCheck(id, body, failed) {
+function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
         const res = yield octo.rest.checks.create({
             id,
             status: 'completed',
             conclusion: failed ? 'failure' : 'success',
             output: {
-                // title: checkName, TODO do we need this?
+                title,
                 summary: body
             }
         });

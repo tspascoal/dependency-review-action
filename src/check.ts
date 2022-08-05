@@ -85,7 +85,7 @@ export async function createLicensesCheck(
     }
   }
 
-  await updateCheck(checkIdLicense, body, failed) //TODO: pass id
+  await updateCheck(checkIdLicense, 'Dependency Review', body, failed)
 }
 
 export async function createVulnerabilitiesCheck(
@@ -137,7 +137,7 @@ export async function createVulnerabilitiesCheck(
     }
   }
 
-  await updateCheck(checkIdVulnerability, body, failed)
+  await updateCheck(checkIdVulnerability, 'Dependency Review', body, failed)
 }
 
 function renderUrl(url: string | null, text: string): string {
@@ -153,14 +153,11 @@ function getManifests(changes: Changes): Set<string> {
 }
 
 async function createCheck(checkName: string, sha: string): Promise<number> {
+  core.debug(`creating check ${checkName} in progress`)
   const res = await octo.rest.checks.create({
     name: checkName,
     head_sha: sha,
     status: 'in_progress',
-    output: {
-      title: checkName,
-      summary: ''
-    },
     ...github.context.repo
   })
 
@@ -171,6 +168,7 @@ async function createCheck(checkName: string, sha: string): Promise<number> {
 
 async function updateCheck(
   id: number,
+  title: string,
   body: string,
   failed: boolean
 ): Promise<void> {
@@ -179,7 +177,7 @@ async function updateCheck(
     status: 'completed',
     conclusion: failed ? 'failure' : 'success',
     output: {
-      // title: checkName, TODO do we need this?
+      title,
       summary: body
     }
   })

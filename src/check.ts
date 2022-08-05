@@ -158,6 +158,10 @@ async function createCheck(checkName: string, sha: string): Promise<number> {
     name: checkName,
     head_sha: sha,
     status: 'in_progress',
+    output: {
+      title: 'Dependency Review',
+      summary: 'Dependency Review is running'
+    },
     ...github.context.repo
   })
 

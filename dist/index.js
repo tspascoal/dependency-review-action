@@ -140,7 +140,8 @@ function getManifests(changes) {
 function createCheck(checkName, sha) {
     return __awaiter(this, void 0, void 0, function* () {
         const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress', output: {
-                title: checkName
+                title: checkName,
+                summary: ''
             } }, github.context.repo));
         core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
         return res.data.id;

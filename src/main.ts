@@ -24,7 +24,7 @@ async function run(): Promise<void> {
 
     const config = readConfig()
 
-    checks.initChecks(github.context.sha, config)
+    await checks.initChecks(github.context.sha, config)
 
     const pull_request = PullRequestSchema.parse(
       github.context.payload.pull_request

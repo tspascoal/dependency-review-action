@@ -176,7 +176,7 @@ async function updateCheck(
   body: string,
   failed: boolean
 ): Promise<void> {
-  core.debug(`updating check ${id}`)
+  core.debug(`updating check: ${id}`)
 
   const res = await octo.rest.checks.update({
     id,

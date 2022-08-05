@@ -150,7 +150,7 @@ function createCheck(checkName, sha) {
 }
 function updateCheck(id, title, body, failed) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`updating check ${id}`);
+        core.debug(`updating check: ${id}`);
         const res = yield octo.rest.checks.update({
             id,
             status: 'completed',
@@ -335,7 +335,7 @@ function run() {
                 throw new Error(`This run was triggered by the "${github.context.eventName}" event, which is unsupported. Please ensure you are using the "pull_request" event for this workflow.`);
             }
             const config = (0, config_1.readConfig)();
-            checks.initChecks(github.context.sha, config);
+            yield checks.initChecks(github.context.sha, config);
             const pull_request = schemas_1.PullRequestSchema.parse(github.context.payload.pull_request);
             const changes = yield dependencyGraph.compare({
                 owner: github.context.repo.owner,

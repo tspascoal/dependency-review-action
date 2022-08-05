@@ -332,7 +332,6 @@ function run() {
             const config = (0, config_1.readConfig)();
             const pull_request = schemas_1.PullRequestSchema.parse(github.context.payload.pull_request);
             yield checks.initChecks(pull_request.head.sha, config);
-            yield new Promise(f => setTimeout(f, 30000));
             const changes = yield dependencyGraph.compare({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,

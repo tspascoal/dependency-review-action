@@ -151,7 +151,7 @@ function getManifests(changes: Changes): Set<string> {
 }
 
 async function createCheck(checkName: string, sha: string): Promise<number> {
-  core.debug(`creating check ${checkName} in progress`)
+  core.debug(`creating check ${checkName} in progress for ${sha}`)
   const res = await octo.rest.checks.create({
     name: checkName,
     head_sha: sha,
@@ -176,6 +176,8 @@ async function updateCheck(
 ): Promise<void> {
   core.debug(`updating check: ${id}`)
 
+  return
+
   const res = await octo.rest.checks.update({
     check_run_id: id,
     status: 'completed',
@@ -187,5 +189,7 @@ async function updateCheck(
     ...github.context.repo
   })
 
-  core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`)
+  core.debug(
+    `updated check with id: ${res.data.id} url: ${res.data.url} sha: ${res.data.head_sha}`
+  )
 }

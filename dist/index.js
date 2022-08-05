@@ -139,7 +139,7 @@ function getManifests(changes) {
 }
 function createCheck(checkName, sha) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`creating check ${checkName} in progress`);
+        core.debug(`creating check ${checkName} in progress for ${sha}`);
         const res = yield octo.rest.checks.create(Object.assign({ name: checkName, head_sha: sha, status: 'in_progress', output: {
                 title: 'Dependency Review',
                 summary: 'Dependency Review is running'
@@ -155,7 +155,7 @@ function updateCheck(id, title, body, failed) {
                 title,
                 summary: body
             } }, github.context.repo));
-        core.debug(`Created check with id: ${res.data.id} url: ${res.data.url}`);
+        core.debug(`updated check with id: ${res.data.id} url: ${res.data.url} sha: ${res.data.head_sha}`);
     });
 }
 

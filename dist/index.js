@@ -47,11 +47,12 @@ const retry = __importStar(__nccwpck_require__(6298));
 const retryingOctokit = githubUtils.GitHub.plugin(retry.retry);
 const octo = new retryingOctokit(githubUtils.getOctokitOptions(core.getInput('repo-token', { required: true })));
 let checkIdVulnerability;
-let checkIdLicense;
+// let checkIdLicense: number
 function initChecks(sha, config) {
     return __awaiter(this, void 0, void 0, function* () {
         checkIdVulnerability = yield createCheck(config.check_name_vulnerability || 'Dependency Review Vulnerabilities', sha);
-        checkIdLicense = yield createCheck(config.check_name_vulnerability || 'Dependency Review Licenses', sha);
+        //checkIdLicense = TODO: uncomment
+        yield createCheck(config.check_name_vulnerability || 'Dependency Review Licenses', sha);
     });
 }
 exports.initChecks = initChecks;
@@ -87,14 +88,16 @@ function createLicensesCheck(licenseErrors, unknownLicensesErrors, failed, confi
                 }
             }
         }
-        yield updateCheck(checkIdLicense, 'Dependency Review', body, failed);
+        core.debug(body); // TODO: Delete
+        throw new Error('caboom');
+        // await updateCheck(checkIdLicense, 'Dependency Review', body, failed)
     });
 }
 exports.createLicensesCheck = createLicensesCheck;
 function createVulnerabilitiesCheck(addedPackages, failed, severity) {
     return __awaiter(this, void 0, void 0, function* () {
         const manifests = getManifests(addedPackages);
-        let body = `We found ${addedPackages.length} vulnerabilities`;
+        let body = `Found ${addedPackages.length} vulnerabilities`;
         core.debug(`found ${manifests.size} manifests`);
         if (addedPackages.length > 0) {
             body += `\n## Vulnerabilities`;

@@ -10,7 +10,7 @@ const octo = new retryingOctokit(
 )
 
 let checkIdVulnerability: number
-let checkIdLicense: number
+// let checkIdLicense: number
 
 export async function initChecks(
   sha: string,
@@ -20,7 +20,8 @@ export async function initChecks(
     config.check_name_vulnerability || 'Dependency Review Vulnerabilities',
     sha
   )
-  checkIdLicense = await createCheck(
+  //checkIdLicense = TODO: uncomment
+  await createCheck(
     config.check_name_vulnerability || 'Dependency Review Licenses',
     sha
   )
@@ -83,7 +84,9 @@ export async function createLicensesCheck(
     }
   }
 
-  await updateCheck(checkIdLicense, 'Dependency Review', body, failed)
+  core.debug(body) // TODO: Delete
+  throw new Error('caboom')
+  // await updateCheck(checkIdLicense, 'Dependency Review', body, failed)
 }
 
 export async function createVulnerabilitiesCheck(
